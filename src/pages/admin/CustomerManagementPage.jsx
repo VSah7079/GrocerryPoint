@@ -1,49 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, MoreVertical, UserPlus, UserX, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const initialCustomers = [
-  {
-    id: 1,
-    name: 'Alex Fresh',
-    email: 'alex.fresh@example.com',
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
-    joined: '2024-05-10',
-    orders: 12,
-    totalSpent: 1234.50,
-    status: 'Active',
-  },
-  {
-    id: 2,
-    name: 'Samantha Green',
-    email: 's.green@example.com',
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704e',
-    joined: '2024-04-22',
-    orders: 5,
-    totalSpent: 678.00,
-    status: 'Active',
-  },
-  {
-    id: 3,
-    name: 'John Doe',
-    email: 'johndoe@example.com',
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704f',
-    joined: '2024-03-15',
-    orders: 2,
-    totalSpent: 150.25,
-    status: 'Suspended',
-  },
-   {
-    id: 4,
-    name: 'Jane Smith',
-    email: 'jane.s@example.com',
-    avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704a',
-    joined: '2024-06-01',
-    orders: 8,
-    totalSpent: 980.00,
-    status: 'Active',
-  },
-];
 
 const statusClasses = {
     Active: 'bg-green-100 text-green-800',
@@ -51,7 +8,9 @@ const statusClasses = {
 };
 
 const CustomerManagementPage = () => {
-    const [customers, setCustomers] = useState(initialCustomers);
+    const [customers, setCustomers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
     const [openDropdown, setOpenDropdown] = useState(null);
@@ -64,11 +23,47 @@ const CustomerManagementPage = () => {
     });
     const [formError, setFormError] = useState('');
 
+    // Fetch customers from API
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            try {
+                const response = await fetch('/api/admin/customers', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.customers) {
+                    // Transform API data to frontend format
+                    const transformedCustomers = data.customers.map(customer => ({
+                        id: customer._id,
+                        name: customer.name,
+                        email: customer.email,
+                        avatar: `https://i.pravatar.cc/150?u=${customer.email}`,
+                        joined: new Date(customer.createdAt).toISOString().split('T')[0],
+                        orders: 0, // This would need to be calculated from orders
+                        totalSpent: 0, // This would need to be calculated from orders
+                        status: 'Active'
+                    }));
+                    setCustomers(transformedCustomers);
+                }
+            } catch (err) {
+                setError('Failed to load customers');
+                console.error('Error fetching customers:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCustomers();
+    }, []);
+
     const handleStatusToggle = (id) => {
         setCustomers(customers.map(c => 
             c.id === id ? { ...c, status: c.status === 'Active' ? 'Suspended' : 'Active' } : c
         ));
-        setOpenDropdown(null); // Close dropdown after action
+        setOpenDropdown(null);
     };
 
     const handleFormChange = (e) => {
@@ -102,148 +97,231 @@ const CustomerManagementPage = () => {
         return customers
             .filter(c => filterStatus === 'All' || c.status === filterStatus)
             .filter(c => 
-                c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 c.email.toLowerCase().includes(searchTerm.toLowerCase())
             );
     }, [customers, searchTerm, filterStatus]);
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-red-500 text-xl mb-4">⚠️ {error}</div>
+                    <button 
+                        onClick={() => window.location.reload()} 
+                        className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="bg-slate-50 p-8 min-h-screen">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-                <h1 className="text-4xl font-extrabold text-slate-800 mb-4 sm:mb-0">Customer Management</h1>
-                <button 
-                    className="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
+        <div className="p-6 bg-gray-50 min-h-screen">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800">Customer Management</h1>
+                    <p className="text-gray-600">Manage customers and their accounts</p>
+                </div>
+                <button
                     onClick={() => setShowModal(true)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
                 >
-                    <UserPlus size={20} className="mr-2"/>
-                    Add New Customer
+                    <UserPlus size={20} />
+                    Add Customer
                 </button>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white p-6 rounded-lg shadow mb-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search customers..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            />
+                        </div>
+                    </div>
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                        <option value="All">All Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Suspended">Suspended</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Customer Table */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-gray-50 border-b">
+                            <tr>
+                                <th className="text-left py-4 px-6 font-semibold text-gray-700">Customer</th>
+                                <th className="text-left py-4 px-6 font-semibold text-gray-700">Joined</th>
+                                <th className="text-left py-4 px-6 font-semibold text-gray-700">Orders</th>
+                                <th className="text-left py-4 px-6 font-semibold text-gray-700">Total Spent</th>
+                                <th className="text-left py-4 px-6 font-semibold text-gray-700">Status</th>
+                                <th className="text-left py-4 px-6 font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredCustomers.map((customer) => (
+                                <tr key={customer.id} className="border-b hover:bg-gray-50">
+                                    <td className="py-4 px-6">
+                                        <div className="flex items-center gap-3">
+                                            <img
+                                                src={customer.avatar}
+                                                alt={customer.name}
+                                                className="w-10 h-10 rounded-full"
+                                            />
+                                            <div>
+                                                <p className="font-semibold text-gray-800">{customer.name}</p>
+                                                <p className="text-sm text-gray-600">{customer.email}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-6 text-gray-700">{customer.joined}</td>
+                                    <td className="py-4 px-6 text-gray-700">{customer.orders}</td>
+                                    <td className="py-4 px-6 text-gray-700">₹{customer.totalSpent.toFixed(2)}</td>
+                                    <td className="py-4 px-6">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[customer.status]}`}>
+                                            {customer.status}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 px-6">
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setOpenDropdown(openDropdown === customer.id ? null : customer.id)}
+                                                className="p-2 hover:bg-gray-100 rounded-lg"
+                                            >
+                                                <MoreVertical size={16} />
+                                            </button>
+                                            {openDropdown === customer.id && (
+                                                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-10">
+                                                    <Link
+                                                        to={`/admin/customers/${customer.id}`}
+                                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                        onClick={() => setOpenDropdown(null)}
+                                                    >
+                                                        View Details
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => handleStatusToggle(customer.id)}
+                                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                    >
+                                                        {customer.status === 'Active' ? 'Suspend' : 'Activate'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Add Customer Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative">
-                        <button className="absolute top-4 right-4 text-slate-400 hover:text-slate-700" onClick={() => setShowModal(false)}>
-                            <X size={24} />
-                        </button>
-                        <h2 className="text-2xl font-bold mb-6 text-slate-800">Add New Customer</h2>
-                        {formError && <div className="mb-4 text-red-600 text-sm">{formError}</div>}
-                        <form onSubmit={handleAddCustomer} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Name</label>
-                                <input type="text" name="name" value={form.name} onChange={handleFormChange} className="w-full p-3 border border-slate-300 rounded-lg" required />
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold">Add New Customer</h2>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAddCustomer}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={form.name}
+                                        onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={form.email}
+                                        onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={form.phone}
+                                        onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                    <select
+                                        name="status"
+                                        value={form.status}
+                                        onChange={handleFormChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                    >
+                                        <option value="Active">Active</option>
+                                        <option value="Suspended">Suspended</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Email</label>
-                                <input type="email" name="email" value={form.email} onChange={handleFormChange} className="w-full p-3 border border-slate-300 rounded-lg" required />
+                            {formError && <p className="text-red-500 text-sm mt-2">{formError}</p>}
+                            <div className="flex gap-2 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                >
+                                    Add Customer
+                                </button>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Phone</label>
-                                <input type="tel" name="phone" value={form.phone} onChange={handleFormChange} className="w-full p-3 border border-slate-300 rounded-lg" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Status</label>
-                                <select name="status" value={form.status} onChange={handleFormChange} className="w-full p-3 border border-slate-300 rounded-lg">
-                                    <option value="Active">Active</option>
-                                    <option value="Suspended">Suspended</option>
-                                </select>
-                            </div>
-                            <button type="submit" className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors">Add Customer</button>
                         </form>
                     </div>
                 </div>
             )}
-
-            {/* Filters and Search */}
-            <div className="bg-white p-6 rounded-2xl shadow-md mb-8 flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-grow">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
-                    <input 
-                        type="text"
-                        placeholder="Search by name or email..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full p-3 pl-12 border border-slate-300 rounded-lg"
-                    />
-                </div>
-                <select 
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="w-full sm:w-auto p-3 border border-slate-300 rounded-lg"
-                >
-                    <option value="All">All Statuses</option>
-                    <option value="Active">Active</option>
-                    <option value="Suspended">Suspended</option>
-                </select>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-md overflow-x-auto">
-                <table className="w-full text-left">
-                     <thead>
-                        <tr className="bg-slate-100 text-slate-600 uppercase text-sm">
-                            <th className="p-4">Customer</th>
-                            <th className="p-4">Email</th>
-                            <th className="p-4">Joined</th>
-                            <th className="p-4 text-center">Orders</th>
-                            <th className="p-4 text-right">Total Spent</th>
-                            <th className="p-4 text-center">Status</th>
-                            <th className="p-4 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredCustomers.map(customer => (
-                            <tr key={customer.id} className="border-b hover:bg-slate-50">
-                                <td className="p-4 flex items-center">
-                                    <img src={customer.avatar} alt={customer.name} className="w-10 h-10 rounded-full object-cover mr-4"/>
-                                    <span className="font-semibold text-slate-800">{customer.name}</span>
-                                </td>
-                                <td className="p-4 text-slate-600">{customer.email}</td>
-                                <td className="p-4 text-slate-600">{customer.joined}</td>
-                                <td className="p-4 text-center text-slate-600">{customer.orders}</td>
-                                <td className="p-4 text-right font-semibold text-green-600">₹{customer.totalSpent.toFixed(2)}</td>
-                                <td className="p-4 text-center">
-                                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${statusClasses[customer.status]}`}>
-                                        {customer.status}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-center relative">
-                                    <button 
-                                        onClick={() => setOpenDropdown(openDropdown === customer.id ? null : customer.id)}
-                                        className="p-2 text-slate-500 hover:text-slate-700 rounded-full transition-colors"
-                                    >
-                                        <MoreVertical size={18} />
-                                    </button>
-                                    {openDropdown === customer.id && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border">
-                                            <Link 
-                                              to={`/admin/customers/${customer.id}`} 
-                                              className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
-                                              onClick={() => setOpenDropdown(null)}
-                                            >
-                                                View Details
-                                            </Link>
-                                            <button 
-                                                onClick={() => handleStatusToggle(customer.id)} 
-                                                className="w-full text-left block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
-                                            >
-                                                {customer.status === 'Active' ? 'Suspend' : 'Activate'}
-                                            </button>
-                                        </div>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                 {filteredCustomers.length === 0 && (
-                    <div className="text-center p-8 text-slate-500">
-                        <p>No customers found.</p>
-                    </div>
-                )}
-            </div>
         </div>
     );
 };
 
-export default CustomerManagementPage; 
+export default CustomerManagementPage;

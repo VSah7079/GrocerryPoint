@@ -23,84 +23,49 @@ const FeatureIcons = {
   ),
 };
 
+// Categories based on actual mock products data
 const categories = [
   {
-    name: 'Fresh Produce',
-    emoji: '🥦',
-    color: 'bg-green-100',
-    textColor: 'text-green-700',
-  },
-  {
-    name: 'Food Grains, Oil & Masala',
+    name: 'Grains & Rice',
     emoji: '🍚',
     color: 'bg-yellow-100',
     textColor: 'text-yellow-700',
   },
   {
-    name: 'Packaged Food',
-    emoji: '🥫',
-    color: 'bg-pink-100',
-    textColor: 'text-pink-700',
-  },
-  {
-    name: 'Dairy & Bakery',
-    emoji: '🥛',
-    color: 'bg-blue-100',
-    textColor: 'text-blue-700',
-  },
-  {
-    name: 'Snacks & Beverages',
-    emoji: '🍬',
-    color: 'bg-purple-100',
-    textColor: 'text-purple-700',
-  },
-  {
-    name: 'Personal Care',
-    emoji: '🧴',
+    name: 'Oil & Ghee',
+    emoji: '🛢️',
     color: 'bg-orange-100',
     textColor: 'text-orange-700',
   },
   {
-    name: 'Household Essentials',
-    emoji: '🧼',
-    color: 'bg-slate-100',
-    textColor: 'text-slate-700',
+    name: 'Spices',
+    emoji: '�️',
+    color: 'bg-red-100',
+    textColor: 'text-red-700',
   },
   {
-    name: 'Pet Care',
-    emoji: '🐶',
-    color: 'bg-teal-100',
-    textColor: 'text-teal-700',
+    name: 'Dairy Products',
+    emoji: '�',
+    color: 'bg-blue-100',
+    textColor: 'text-blue-700',
   },
   {
-    name: 'Baby Care',
-    emoji: '🍼',
-    color: 'bg-pink-200',
-    textColor: 'text-pink-800',
+    name: 'Pulses & Lentils',
+    emoji: '🫘',
+    color: 'bg-green-100',
+    textColor: 'text-green-700',
   },
   {
-    name: 'Health & Wellness',
-    emoji: '💊',
-    color: 'bg-green-200',
-    textColor: 'text-green-800',
+    name: 'Beverages',
+    emoji: '☕',
+    color: 'bg-purple-100',
+    textColor: 'text-purple-700',
   },
   {
-    name: 'Frozen Food',
-    emoji: '🍰',
-    color: 'bg-blue-200',
-    textColor: 'text-blue-800',
-  },
-  {
-    name: 'Pooja Essentials',
-    emoji: '🕯️',
-    color: 'bg-yellow-200',
-    textColor: 'text-yellow-800',
-  },
-  {
-    name: 'Salt, Sugar & Sweeteners',
-    emoji: '🧂',
-    color: 'bg-gray-100',
-    textColor: 'text-gray-700',
+    name: 'Sweeteners',
+    emoji: '🍯',
+    color: 'bg-amber-100',
+    textColor: 'text-amber-700',
   },
 ];
 
@@ -210,16 +175,16 @@ const HomePage = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to="/products"
+              to="/categories"
               className="bg-white text-green-600 font-bold py-4 px-8 rounded-full hover:bg-green-50 transition-all duration-300 transform hover:scale-105 shadow-lg animate-bounce-slow"
             >
-              Shop Now
+              Browse Categories
             </Link>
             <Link
-              to="/about"
+              to="/products"
               className="border-2 border-white text-white font-bold py-4 px-8 rounded-full hover:bg-white hover:text-green-600 transition-all duration-300"
             >
-              Learn More
+              Shop All Products
             </Link>
           </div>
         </div>
@@ -302,7 +267,13 @@ const HomePage = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-extrabold text-green-700 mb-4">🛒 Shop by Category</h2>
-            <p className="text-xl text-gray-600">Explore our wide range of fresh products</p>
+            <p className="text-xl text-gray-600">Explore our carefully curated categories - each with quality products available now!</p>
+            <Link 
+              to="/categories" 
+              className="inline-block mt-4 text-green-600 hover:text-green-700 font-semibold hover:underline"
+            >
+              View All Categories →
+            </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {categories.map((cat, idx) => (

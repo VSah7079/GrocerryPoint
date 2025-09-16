@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ContactAPI } from '../services/api';
 
 const ContactPage = () => {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
@@ -11,15 +12,25 @@ const ContactPage = () => {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
       setError('Please fill in all fields.');
       return;
     }
-    // Simulate form submission
-    setSubmitted(true);
-    setForm({ name: '', email: '', message: '' });
+    
+    try {
+      const response = await ContactAPI.submitForm(form);
+      
+      if (response.success) {
+        setSubmitted(true);
+        setForm({ name: '', email: '', message: '' });
+      } else {
+        setError(response.message || 'Failed to send message');
+      }
+    } catch (err) {
+      setError(err.message || 'Network error. Please try again.');
+    }
   };
 
   return (

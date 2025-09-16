@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import { AuthAPI } from '../services/api';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -33,17 +33,12 @@ const LoginPage = () => {
     }
 
     try {
-      const res = await axios.post('http://localhost:8080/api/auth/login', formData, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      });
+      const response = await AuthAPI.login(formData);
 
-      const { success, user, token } = res.data;
+      const { success, data } = response;
       
-      if (success && user && token) {
-        login(user, token);
+      if (success && data.user && data.token) {
+        login(data.user, data.token);
         setIsLoading(false);
 
         if (action === 'buy') navigate('/checkout');
@@ -54,7 +49,7 @@ const LoginPage = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.message || 'Login failed. Please try again.');
       setIsLoading(false);
     }
   };

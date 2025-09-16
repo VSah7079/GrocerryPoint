@@ -4,7 +4,7 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProductCard = ({ product }) => {
-  const { id, name, category, price, discount, image, rating } = product;
+  const { _id: id, name, category, price, discount, image, rating } = product;
   const newPrice = discount > 0 ? price - (price * discount) / 100 : price;
   const { addToCart } = useCart();
   const { user, loading } = useAuth();

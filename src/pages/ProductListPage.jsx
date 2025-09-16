@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { products } from '../data/products';
+import { ProductAPI } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import { useLocation } from 'react-router-dom';
 
 const ProductListPage = () => {
   const location = useLocation();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [priceRange, setPriceRange] = useState([0, 10]);
@@ -12,43 +15,39 @@ const ProductListPage = () => {
   const [viewMode, setViewMode] = useState('grid'); // grid or list
   const [showFilters, setShowFilters] = useState(false);
 
-  // Add a mapping from broad categories to product categories
-  const categoryMap = {
-    'Fresh Produce': ['Fruits', 'Vegetables', 'Leafy Greens'],
-    'Food Grains, Oil & Masala': ['Food Grains', 'Oil', 'Masala', 'Spices'],
-    'Packaged Food': ['Packaged Food', 'Biscuits', 'Cookies', 'Noodles', 'Pasta', 'Breakfast Cereals', 'Pickles', 'Jams', 'Sauces', 'Ready-to-Eat Meals'],
-    'Dairy & Bakery': ['Dairy', 'Bakery', 'Eggs'],
-    'Snacks & Beverages': ['Snacks', 'Beverages', 'Chips', 'Namkeen', 'Cold Drinks', 'Juices', 'Tea', 'Coffee', 'Chocolates', 'Candies'],
-    'Personal Care': ['Personal Care', 'Soap', 'Body Wash', 'Shampoo', 'Conditioner', 'Toothpaste', 'Oral Care', 'Sanitary Napkins', 'Diapers', 'Hair Oils', 'Creams'],
-    'Household Essentials': ['Household Essentials', 'Cleaning Supplies', 'Detergents', 'Dishwash', 'Air Fresheners', 'Tissues', 'Napkins', 'Garbage Bags'],
-    'Pet Care': ['Pet Care', 'Dog Food', 'Cat Food', 'Pet Shampoo', 'Pet Accessories'],
-    'Baby Care': ['Baby Care', 'Baby Food', 'Diapers', 'Baby Lotion', 'Baby Powder'],
-    'Health & Wellness': ['Health & Wellness', 'Ayurvedic Products', 'Vitamins', 'Supplements', 'Health Drinks'],
-    'Frozen Food': ['Frozen Food', 'Frozen Snacks', 'Frozen Vegetables', 'Ice Creams'],
-    'Pooja Essentials': ['Pooja Essentials', 'Agarbatti', 'Camphor', 'Matchsticks', 'Diyas', 'Ghee', 'Cotton Wicks'],
-    'Salt, Sugar & Sweeteners': ['Salt', 'Sugar', 'Sweeteners', 'Jaggery', 'Table Salt', 'Rock Salt', 'Sugar-Free Tablets'],
-  };
+  // Our actual product categories from mock data - no mapping needed as we'll use direct categories
+
+  // Fetch products on component mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await ProductAPI.getAllProducts();
+        setProducts(response.data.products || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError('Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   // Get unique categories
   const categories = useMemo(() => {
     const cats = ['All', ...new Set(products.map(p => p.category))];
     return cats;
-  }, []);
+  }, [products]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
     let filtered = products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            product.category.toLowerCase().includes(searchTerm.toLowerCase());
-      let matchesCategory = selectedCategory === 'All';
-      if (!matchesCategory) {
-        // If selectedCategory is a broad category, check if product.category is in its mapped categories
-        if (categoryMap[selectedCategory]) {
-          matchesCategory = categoryMap[selectedCategory].some(cat => product.category === cat);
-        } else {
-          matchesCategory = product.category === selectedCategory;
-        }
-      }
+      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
       
       return matchesSearch && matchesCategory && matchesPrice;
@@ -76,16 +75,17 @@ const ProductListPage = () => {
     }
 
     return filtered;
-  }, [searchTerm, selectedCategory, priceRange, sortBy]);
+  }, [products, searchTerm, selectedCategory, priceRange, sortBy]);
 
   // Get price statistics
   const priceStats = useMemo(() => {
+    if (products.length === 0) return { min: 0, max: 10 };
     const prices = products.map(p => p.price);
     return {
       min: Math.min(...prices),
       max: Math.max(...prices)
     };
-  }, []);
+  }, [products]);
 
   // Initialize price range with actual min and max
   useEffect(() => {
@@ -102,6 +102,33 @@ const ProductListPage = () => {
       setSelectedCategory(cat);
     }
   }, [location.search]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">⚠️ Error loading products</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -298,7 +325,7 @@ const ProductListPage = () => {
                 : "space-y-4"
               }>
                 {filteredProducts.map(product => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product._id} product={product} />
         ))}
               </div>
             )}

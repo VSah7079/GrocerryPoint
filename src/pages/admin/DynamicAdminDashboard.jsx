@@ -86,16 +86,18 @@ const DynamicAdminDashboard = () => {
 
   // Generate Random Orders (Simulated)
   const generateRandomOrders = useCallback(() => {
-    const orderStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
-    const customerNames = ['Rahul Sharma', 'Priya Patel', 'Amit Kumar', 'Sunita Singh', 'Vikash Gupta'];
+    const orderStatuses = ['Order Placed', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+    const customerNames = ['Sharma Family', 'Patel Household', 'Kumar Family', 'Singh Residence', 'Gupta Family'];
+    const groceryItems = ['Rice & Dal', 'Fresh Vegetables', 'Dairy Products', 'Spices & Oil', 'Mixed Groceries'];
     
     return Array.from({ length: 8 }, (_, i) => ({
-      id: `ORD${1000 + i}`,
+      id: `GP${1000 + i}`,
       customer: customerNames[Math.floor(Math.random() * customerNames.length)],
-      total: Math.floor(Math.random() * 2000) + 200,
+      total: Math.floor(Math.random() * 1500) + 300,
       status: orderStatuses[Math.floor(Math.random() * orderStatuses.length)],
       date: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      items: Math.floor(Math.random() * 5) + 1
+      items: Math.floor(Math.random() * 8) + 2,
+      type: groceryItems[Math.floor(Math.random() * groceryItems.length)]
     }));
   }, []);
 
@@ -112,11 +114,11 @@ const DynamicAdminDashboard = () => {
   // Generate Notifications
   const generateNotifications = useCallback(() => {
     const notifications = [
-      'New order received from Rahul Sharma',
-      'Product "Fresh Tomatoes" is low in stock',
-      'Monthly sales report is ready',
-      'New customer registration: Priya Patel',
-      'Payment received for order #ORD1001'
+      '🛒 New grocery order from Rahul Sharma - ₹1,250 (Basmati Rice, Fresh Milk)',
+      '📦 "Organic Turmeric Powder" is running low - Only 5 units left',
+      '📊 Weekly fresh produce sales report is ready for review',
+      '👋 New family joined GrocerryPoint: The Patels from Sector 15',
+      '💳 Payment confirmed for grocery order #GP1001 - ₹890'
     ];
     
     return notifications.slice(0, 3).map((text, index) => ({
@@ -222,24 +224,32 @@ const DynamicAdminDashboard = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-1">Real-time data from Product API - All {dashboardData.totalProducts} products loaded dynamically!</p>
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl">🛒</span>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-green-800">GrocerryPoint Admin</h1>
+              <p className="text-green-600 font-medium">Fresh Groceries Management Dashboard</p>
+            </div>
+          </div>
+          <p className="text-gray-600 mt-1">Managing {dashboardData.totalProducts} fresh products across {dashboardData.categoryData.length} categories</p>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-500">
-            Last updated: {lastUpdate.toLocaleTimeString()}
+          <div className="text-sm text-green-600 bg-white px-3 py-2 rounded-lg shadow-sm">
+            🕒 Last updated: {lastUpdate.toLocaleTimeString()}
           </div>
           <button
             onClick={performRealTimeUpdate}
             disabled={loading}
-            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh API Data</span>
+            <span>Refresh Store Data</span>
           </button>
         </div>
       </div>
@@ -253,67 +263,82 @@ const DynamicAdminDashboard = () => {
       )}
 
       {/* Success Message */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-2">
-        <Eye className="h-5 w-5 text-green-600" />
-        <span className="text-green-700">
-          ✅ Successfully connected to Product API! Showing {dashboardData.totalProducts} dynamic products from database.
-        </span>
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex items-center space-x-3 shadow-sm">
+        <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+          <span className="text-white font-bold">🏪</span>
+        </div>
+        <div>
+          <p className="text-green-800 font-semibold">GrocerryPoint Store Status: Online</p>
+          <p className="text-green-600 text-sm">
+            ✅ {dashboardData.totalProducts} fresh products available • {dashboardData.categoryData.length} categories • All systems operational
+          </p>
+        </div>
       </div>
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Products (API)</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardData.totalProducts}</p>
+              <p className="text-sm font-medium text-gray-600">Fresh Products</p>
+              <p className="text-3xl font-bold text-green-700">{dashboardData.totalProducts}</p>
             </div>
-            <Package className="h-8 w-8 text-blue-600" />
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🥬</span>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">📊 Live from Product API</p>
+          <p className="text-xs text-green-600 mt-2 font-medium">� Available in store</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardData.totalOrders}</p>
+              <p className="text-sm font-medium text-gray-600">Grocery Orders</p>
+              <p className="text-3xl font-bold text-orange-700">{dashboardData.totalOrders}</p>
             </div>
-            <ShoppingCart className="h-8 w-8 text-green-600" />
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">📦</span>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">📈 +12% from last month</p>
+          <p className="text-xs text-orange-600 mt-2 font-medium">🚚 Fast delivery orders</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-emerald-500 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Revenue (API)</p>
-              <p className="text-2xl font-bold text-gray-900">₹{dashboardData.totalRevenue.toLocaleString()}</p>
+              <p className="text-sm font-medium text-gray-600">Store Revenue</p>
+              <p className="text-3xl font-bold text-emerald-700">₹{dashboardData.totalRevenue.toLocaleString()}</p>
             </div>
-            <DollarSign className="h-8 w-8 text-yellow-600" />
+            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">💰</span>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">💰 Calculated from API data</p>
+          <p className="text-xs text-emerald-600 mt-2 font-medium">� Fresh groceries sales</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Customers</p>
-              <p className="text-2xl font-bold text-gray-900">{dashboardData.totalCustomers}</p>
+              <p className="text-sm font-medium text-gray-600">Happy Customers</p>
+              <p className="text-3xl font-bold text-blue-700">{dashboardData.totalCustomers}</p>
             </div>
-            <Users className="h-8 w-8 text-purple-600" />
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">👨‍👩‍👧‍👦</span>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-2">👥 +15% from last month</p>
+          <p className="text-xs text-blue-600 mt-2 font-medium">🏠 Families served</p>
         </div>
       </div>
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sales Chart */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
-            Sales Overview
+            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+              <span className="text-sm">📈</span>
+            </div>
+            GrocerryPoint Sales Trends
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={dashboardData.salesData}>
@@ -327,10 +352,12 @@ const DynamicAdminDashboard = () => {
         </div>
 
         {/* Category Distribution */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Package className="h-5 w-5 mr-2 text-green-600" />
-            Category Distribution (API Data)
+            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+              <span className="text-sm">🛒</span>
+            </div>
+            Grocery Categories Distribution
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -357,18 +384,26 @@ const DynamicAdminDashboard = () => {
       {/* Recent Orders and Top Products */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <ShoppingCart className="h-5 w-5 mr-2 text-green-600" />
-            Recent Orders
+            <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
+              <span className="text-sm">🛍️</span>
+            </div>
+            Recent Grocery Orders
           </h3>
           <div className="space-y-4">
             {dashboardData.recentOrders.slice(0, 5).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                <div>
-                  <p className="font-medium text-gray-900">#{order.id}</p>
-                  <p className="text-sm text-gray-600">{order.customer}</p>
-                  <p className="text-xs text-gray-500">{order.date}</p>
+              <div key={order.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-green-50 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm">🛒</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">#{order.id}</p>
+                    <p className="text-sm text-gray-600">{order.customer}</p>
+                    <p className="text-xs text-green-600">{order.type} • {order.items} items</p>
+                    <p className="text-xs text-gray-500">{order.date}</p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-gray-900">₹{order.total}</p>
@@ -380,37 +415,40 @@ const DynamicAdminDashboard = () => {
         </div>
 
         {/* Top Products from API */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Star className="h-5 w-5 mr-2 text-yellow-600" />
-            Top Selling Products (API)
+            <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+              <span className="text-sm">⭐</span>
+            </div>
+            Top Fresh Products
           </h3>
           <div className="space-y-4">
             {dashboardData.topProducts.slice(0, 5).map((product, index) => (
-              <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+              <div key={product.id} className="flex items-center justify-between p-4 border rounded-xl hover:bg-yellow-50 transition-colors border-yellow-100">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-semibold text-sm">#{index + 1}</span>
+                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <span className="text-yellow-600 font-bold text-sm">#{index + 1}</span>
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{product.name}</p>
-                    <p className="text-sm text-gray-600">{product.category}</p>
+                    <p className="text-sm text-green-600 font-medium">{product.category}</p>
                     <div className="flex items-center space-x-2 mt-1">
                       <span className="flex items-center text-yellow-500">
                         <Star className="h-3 w-3 fill-current" />
-                        <span className="text-xs ml-1">{product.rating}</span>
+                        <span className="text-xs ml-1 font-medium">{product.rating}</span>
                       </span>
                       {product.isOrganic && (
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                          Organic
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                          🌱 Organic
                         </span>
                       )}
+                      <span className="text-xs text-orange-600 font-medium">🔥 Bestseller</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-gray-900">₹{product.price}</p>
-                  <p className="text-sm text-gray-600">{product.sales} sold</p>
+                  <p className="text-sm text-green-600 font-medium">{product.sales} sold</p>
                 </div>
               </div>
             ))}
@@ -420,53 +458,63 @@ const DynamicAdminDashboard = () => {
 
       {/* Product Statistics from API */}
       {productStats && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Eye className="h-5 w-5 mr-2 text-purple-600" />
-            Product Statistics (Live API Data)
+            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+              <span className="text-sm">📊</span>
+            </div>
+            🥕 Fresh Inventory Analytics
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <h4 className="text-sm font-medium text-gray-600 mb-2">Stock Status</h4>
-              <div className="space-y-2">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl text-center">
+              <h4 className="text-sm font-semibold text-green-800 mb-3 flex items-center justify-center">
+                📦 Stock Status
+              </h4>
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-green-600">In Stock</span>
-                  <span className="font-semibold">{productStats.stockStatus?.inStock || 0}</span>
+                  <span className="text-sm text-green-700 font-medium">✅ Fresh Stock</span>
+                  <span className="font-bold text-green-800">{productStats.stockStatus?.inStock || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-yellow-600">Low Stock</span>
-                  <span className="font-semibold">{productStats.stockStatus?.lowStock || 0}</span>
+                  <span className="text-sm text-yellow-700 font-medium">⚠️ Low Stock</span>
+                  <span className="font-bold text-yellow-800">{productStats.stockStatus?.lowStock || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-red-600">Out of Stock</span>
-                  <span className="font-semibold">{productStats.stockStatus?.outOfStock || 0}</span>
-                </div>
-              </div>
-            </div>
-            <div className="text-center">
-              <h4 className="text-sm font-medium text-gray-600 mb-2">Price Range</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Minimum</span>
-                  <span className="font-semibold">₹{productStats.priceRange?.min || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Maximum</span>
-                  <span className="font-semibold">₹{productStats.priceRange?.max || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Average</span>
-                  <span className="font-semibold">₹{productStats.overview?.avgPrice || 0}</span>
+                  <span className="text-sm text-red-700 font-medium">❌ Out of Stock</span>
+                  <span className="font-bold text-red-800">{productStats.stockStatus?.outOfStock || 0}</span>
                 </div>
               </div>
             </div>
-            <div className="text-center">
-              <h4 className="text-sm font-medium text-gray-600 mb-2">Categories (API)</h4>
-              <div className="space-y-2">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl text-center">
+              <h4 className="text-sm font-semibold text-blue-800 mb-3 flex items-center justify-center">
+                💰 Price Range
+              </h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-700 font-medium">💵 Minimum</span>
+                  <span className="font-bold text-blue-800">₹{productStats.priceRange?.min || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-700 font-medium">💎 Maximum</span>
+                  <span className="font-bold text-blue-800">₹{productStats.priceRange?.max || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-700 font-medium">📊 Average</span>
+                  <span className="font-bold text-blue-800">₹{productStats.overview?.avgPrice || 0}</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl text-center">
+              <h4 className="text-sm font-semibold text-orange-800 mb-3 flex items-center justify-center">
+                🛒 Top Categories
+              </h4>
+              <div className="space-y-3">
                 {productStats.categoryStats?.slice(0, 3).map((cat, index) => (
                   <div key={index} className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">{cat.category.split(' ')[0]}</span>
-                    <span className="font-semibold">{cat.productCount}</span>
+                    <span className="text-sm text-orange-700 font-medium">
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'} {cat.category.split(' ')[0]}
+                    </span>
+                    <span className="font-bold text-orange-800">{cat.productCount}</span>
                   </div>
                 ))}
               </div>
@@ -476,10 +524,12 @@ const DynamicAdminDashboard = () => {
       )}
 
       {/* Live Notifications */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <Bell className="h-5 w-5 mr-2 text-red-600" />
-          Live Notifications
+          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+            <span className="text-sm">🔔</span>
+          </div>
+          Store Notifications
         </h3>
         <div className="space-y-3">
           {dashboardData.notifications.map((notification) => (

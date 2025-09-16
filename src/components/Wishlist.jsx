@@ -35,16 +35,9 @@ const Wishlist = () => {
 
   const handleAddToCart = async (product) => {
     try {
-      await fetch('/api/cart/add', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          productId: product._id,
-          quantity: 1
-        })
+      await api.post('/cart', {
+        productId: product._id,
+        quantity: 1
       });
       // You might want to show a success message here
     } catch (err) {

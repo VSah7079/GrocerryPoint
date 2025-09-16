@@ -54,8 +54,8 @@ const Header = () => {
             </span>
           </Link>
           
-          {user ? (
-            // User is logged in - show profile menu
+          {user && user.role !== 'admin' ? (
+            // Regular user is logged in - show profile menu
             <div className="relative" ref={profileMenuRef}>
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -96,8 +96,8 @@ const Header = () => {
               )}
             </div>
           ) : (
-            // User is not logged in - show login button
-            <Link to="/login" className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+            // Show login button when no user is logged in OR when admin is logged in
+            <Link to="/login" className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
               Login
             </Link>
           )}

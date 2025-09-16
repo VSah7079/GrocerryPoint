@@ -5,12 +5,14 @@ import { createBrowserRouter, Link } from 'react-router-dom';
 import App from '../App.jsx';
 import { CartProvider } from '../contexts/CartContext';
 
+
 // Layouts
 import MainLayout from '../layouts/MainLayout.jsx';
 import AdminLayout from '../layouts/AdminLayout.jsx';
 
 // User Pages
 import HomePage from '../pages/HomePage.jsx';
+import CategoriesPage from '../pages/CategoriesPage.jsx';
 import ProductListPage from '../pages/ProductListPage.jsx';
 import ProductDetailsPage from '../pages/ProductDetailsPage.jsx';
 import CartPage from '../pages/CartPage.jsx';
@@ -37,11 +39,9 @@ import AboutPage from '../pages/AboutPage.jsx';
 import ContactPage from '../pages/ContactPage.jsx';
 import FAQPage from '../pages/FAQPage.jsx';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage.jsx';
-import BlogPage from '../pages/BlogPage.jsx';
 
 // Admin Pages
 import AdminLoginPage from '../pages/admin/AdminLoginPage.jsx';
-import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
 import DynamicAdminDashboard from '../pages/admin/DynamicAdminDashboard.jsx';
 import ProductManagementPage from '../pages/admin/ProductManagementPage.jsx';
 import OrderManagementPage from '../pages/admin/OrderManagementPage.jsx';
@@ -60,6 +60,7 @@ export const router = createBrowserRouter([
         element: <MainLayout />,
         children: [
           { index: true, element: <HomePage /> },
+          { path: 'categories', element: <CategoriesPage /> },
           { path: 'products', element: <ProductListPage /> },
           { path: 'product/:productId', element: <ProductDetailsPage /> },
           { path: 'cart', element: <CartPage /> },
@@ -70,7 +71,6 @@ export const router = createBrowserRouter([
           { path: 'contact', element: <ContactPage /> },
           { path: 'faq', element: <FAQPage /> },
           { path: 'privacy', element: <PrivacyPolicyPage /> },
-          { path: 'blog', element: <BlogPage /> },
           { path: 'invoice', element: <InvoicePage /> },
         ],
       },
@@ -97,7 +97,6 @@ export const router = createBrowserRouter([
             element: <AdminLayout />,
             children: [
               { path: 'dashboard', element: <DynamicAdminDashboard /> },
-              { path: 'dashboard-old', element: <AdminDashboardPage /> },
               { path: 'products', element: <ProductManagementPage /> },
               { path: 'orders', element: <OrderManagementPage /> },
               { path: 'orders/:orderId', element: <OrderDetailsPage /> },

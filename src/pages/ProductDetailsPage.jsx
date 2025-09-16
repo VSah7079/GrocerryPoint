@@ -1,33 +1,108 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { products } from '../data/products';
+import { ProductAPI } from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { FaStar, FaRegStar, FaShoppingCart, FaBolt, FaTag, FaCheckCircle, FaFireAlt, FaLeaf, FaHeart, FaRegHeart, FaShareAlt } from 'react-icons/fa';
 
 const ProductDetailsPage = () => {
   const { productId } = useParams();
-  const product = products.find(p => p.id === parseInt(productId));
   const { addToCart } = useCart();
   const { user, loading } = useAuth();
-  const navigate = useNavigate();R
+  const navigate = useNavigate();
   const imgRef = useRef();
 
   // State management
+  const [product, setProduct] = useState(null);
+  const [productLoading, setProductLoading] = useState(true);
+  const [productError, setProductError] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [selectedTab, setSelectedTab] = useState('description');
+
+  // Fetch product details
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setProductLoading(true);
+        const response = await ProductAPI.getProductById(productId);
+        if (response.success) {
+          setProduct(response.data.product);
+          
+          // Fetch related products from same category
+          try {
+            const relatedResponse = await ProductAPI.getAllProducts({ 
+              category: response.data.product.category,
+              limit: 5
+            });
+            if (relatedResponse.success) {
+              const related = relatedResponse.data.products.filter(p => p._id !== productId);
+              setRelatedProducts(related.slice(0, 4));
+            }
+          } catch (relatedError) {
+            console.error('Error fetching related products:', relatedError);
+          }
+        } else {
+          setProductError('Product not found');
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error);
+        setProductError('Failed to load product details');
+      } finally {
+        setProductLoading(false);
+      }
+    };
+
+    if (productId) {
+      fetchProduct();
+    }
+  }, [productId]);
+  
   const [isWishlist, setIsWishlist] = useState(false);
   const [zoom, setZoom] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
 
-  if (!product) {
+  // Loading state
+  if (productLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Image skeleton */}
+            <div className="h-96 bg-gray-300 rounded-lg"></div>
+            {/* Content skeleton */}
+            <div className="space-y-4">
+              <div className="h-8 bg-gray-300 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+              <div className="h-6 bg-gray-300 rounded w-1/4"></div>
+              <div className="h-20 bg-gray-300 rounded"></div>
+              <div className="h-12 bg-gray-300 rounded w-1/3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (productError || !product) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-4xl font-bold text-gray-800">Product not found!</h1>
-        <p className="text-gray-600 mt-4">The product you're looking for doesn't exist.</p>
+        <h1 className="text-4xl font-bold text-gray-800">
+          {productError || 'Product not found!'}
+        </h1>
+        <p className="text-gray-600 mt-4">
+          {productError ? 'Please try again later.' : "The product you're looking for doesn't exist."}
+        </p>
+        <button 
+          onClick={() => navigate('/products')}
+          className="mt-6 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Browse Products
+        </button>
       </div>
     );
   }
@@ -35,10 +110,7 @@ const ProductDetailsPage = () => {
   // Image handling with fallbacks
   const images = product.images?.length > 0
     ? product.images
-    : [product.image, ...products
-        .filter(p => p.category === product.category && p.id !== product.id)
-        .map(p => p.image)
-        .slice(0, 3)];
+    : [product.image];
 
   const [mainImage, setMainImage] = useState(images[0]);
 
@@ -365,14 +437,11 @@ const ProductDetailsPage = () => {
             Customers also viewed
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {products
-              .filter(p => p.id !== product.id && p.category === product.category)
-              .slice(0, 4)
-              .map(relatedProduct => (
+            {relatedProducts.slice(0, 4).map(relatedProduct => (
                 <div 
-                  key={relatedProduct.id}
+                  key={relatedProduct._id}
                   className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/product/${relatedProduct.id}`)}
+                  onClick={() => navigate(`/product/${relatedProduct._id}`)}
                 >
                   <img 
                     src={relatedProduct.images?.[0] || relatedProduct.image} 

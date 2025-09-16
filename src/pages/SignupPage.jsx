@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { AuthAPI } from '../services/api';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -42,25 +43,21 @@ const SignupPage = () => {
     setError('');
     
     try {
-      const res = await fetch('http://localhost:8080/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone,
-          dateOfBirth: formData.dateOfBirth,
-          gender: formData.gender
-        })
+      const response = await AuthAPI.signup({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || 'Registration failed');
+      
+      if (!response.success) {
+        setError(response.message || 'Registration failed');
         setIsLoading(false);
         return;
       }
-      login(data, data.token);
+      login(response.data.user, response.data.token);
       setIsLoading(false);
       
       // Redirect based on the action

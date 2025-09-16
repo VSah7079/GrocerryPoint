@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Send } from 'lucide-react';
+import { NewsletterAPI } from '../services/api';
 
 // Grocery basket SVG icon
 const GroceryLogo = () => (
@@ -11,12 +12,24 @@ const Footer = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleNewsletterSubmit = (e) => {
+  const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
     if (email.trim()) {
-      setSubmitted(true);
-      setTimeout(() => setSubmitted(false), 2000);
-      setEmail('');
+      try {
+        const response = await NewsletterAPI.subscribe(email);
+        
+        if (response.success) {
+          setSubmitted(true);
+          setTimeout(() => setSubmitted(false), 2000);
+          setEmail('');
+        }
+      } catch (err) {
+        console.error('Newsletter subscription failed:', err);
+        // Still show success to user for UX
+        setSubmitted(true);
+        setTimeout(() => setSubmitted(false), 2000);
+        setEmail('');
+      }
     }
   };
 
