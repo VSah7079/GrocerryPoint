@@ -18,6 +18,31 @@ const OrderConfirmationPage = () => {
     }
     
     const { items, grandTotal, deliveryTime, paymentMethod, shippingAddress } = orderDetails;
+    
+    // Generate order ID and tracking data
+    const orderId = `ORD${Math.floor(Math.random() * 900000) + 100000}`;
+    const currentDate = new Date().toISOString().split('T')[0];
+    const estimatedDelivery = new Date();
+    estimatedDelivery.setDate(estimatedDelivery.getDate() + 2);
+    
+    // Create order data for tracking
+    const trackingOrderData = {
+        id: orderId,
+        status: "Order Placed",
+        date: currentDate,
+        estimatedDelivery: estimatedDelivery.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        }),
+        total: grandTotal,
+        items: items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: (item.discount > 0 ? item.price - (item.price * item.discount) / 100 : item.price) * item.quantity
+        })),
+        shippingAddress: `${shippingAddress.name}, ${shippingAddress.street}, ${shippingAddress.city}, ${shippingAddress.state} - ${shippingAddress.pincode}`
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -35,7 +60,7 @@ const OrderConfirmationPage = () => {
                         </div>
                         <h1 className="text-4xl font-bold text-gray-800 mt-6">Thank You!</h1>
                         <p className="text-lg text-gray-600 mt-2">Your order has been placed successfully.</p>
-                        <p className="text-gray-800 mt-2">Order ID: <span className="font-semibold text-green-600">#{Math.floor(Math.random() * 900000) + 100000}</span></p>
+                        <p className="text-gray-800 mt-2">Order ID: <span className="font-semibold text-green-600">#{orderId}</span></p>
                     </div>
 
                     {/* Order Details */}
@@ -80,15 +105,56 @@ const OrderConfirmationPage = () => {
                         </div>
                     </div>
 
+                    {/* Tracking Info */}
+                    <div className="mt-8 bg-blue-50 rounded-lg p-6">
+                        <div className="flex items-center justify-center mb-4">
+                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                                <span className="text-2xl">🚚</span>
+                            </div>
+                            <div className="text-left">
+                                <h3 className="text-lg font-bold text-gray-800">Track Your Delivery</h3>
+                                <p className="text-sm text-gray-600">Estimated delivery: {trackingOrderData.estimatedDelivery}</p>
+                            </div>
+                        </div>
+                        <p className="text-center text-gray-600 text-sm mb-4">
+                            Click "Track Your Order" to see real-time updates on your delivery status
+                        </p>
+                        <div className="flex items-center justify-center space-x-8 text-sm">
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                <span className="text-gray-700">Order Placed</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
+                                <span className="text-gray-500">Processing</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
+                                <span className="text-gray-500">Shipped</span>
+                            </div>
+                            <div className="flex items-center">
+                                <div className="w-3 h-3 bg-gray-300 rounded-full mr-2"></div>
+                                <span className="text-gray-500">Delivered</span>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Actions */}
-                    <div className="mt-10">
+                    <div className="mt-8">
                         <p className="text-gray-600 mb-6">You will receive an email confirmation with tracking details shortly.</p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link to="/account/orders" className="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-all duration-300">
-                                Track Your Order
+                            <Link 
+                                to="/track-order" 
+                                state={{ order: trackingOrderData }}
+                                className="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
+                            >
+                                📦 Track Your Order
                             </Link>
-                            <Link to="/" className="w-full sm:w-auto text-green-600 font-bold py-3 px-8 rounded-full border-2 border-green-600 hover:bg-green-50 transition-all duration-300">
-                                Continue Shopping
+                            <Link to="/account/orders" className="w-full sm:w-auto bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
+                                📋 View All Orders
+                            </Link>
+                            <Link to="/" className="w-full sm:w-auto text-green-600 font-bold py-3 px-8 rounded-full border-2 border-green-600 hover:bg-green-50 transition-all duration-300 flex items-center justify-center gap-2">
+                                🛒 Continue Shopping
                             </Link>
                         </div>
                     </div>

@@ -267,13 +267,7 @@ const HomePage = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-extrabold text-green-700 mb-4">🛒 Shop by Category</h2>
-            <p className="text-xl text-gray-600">Explore our carefully curated categories - each with quality products available now!</p>
-            <Link 
-              to="/categories" 
-              className="inline-block mt-4 text-green-600 hover:text-green-700 font-semibold hover:underline"
-            >
-              View All Categories →
-            </Link>
+            <p className="text-xl text-gray-600">Explore our wide range of fresh products</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {categories.map((cat, idx) => (
@@ -392,6 +386,8 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+
 
       {/* CTA Section */}
       <section className="py-16 bg-green-600 text-white relative">
