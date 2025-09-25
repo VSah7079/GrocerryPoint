@@ -96,7 +96,7 @@ const ProductCard = ({ product }) => {
             {name}
           </Link>
         </h3>
-        <p className="text-sm text-gray-500 mb-3 font-medium">{category}</p>
+        <p className="text-sm text-gray-500 mb-3 font-medium">{typeof category === 'object' ? category.name : category}</p>
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-baseline">
             <span className="text-xl font-bold text-green-600">₹{newPrice.toFixed(2)}</span>

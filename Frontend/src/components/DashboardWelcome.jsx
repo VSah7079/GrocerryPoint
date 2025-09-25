@@ -74,6 +74,12 @@ const DashboardWelcome = () => {
         <h2 className="text-4xl font-extrabold text-slate-800 mb-2">
             Welcome back, <span className="text-green-600">{user?.name || 'User'}</span>!
         </h2>
+        <div className="flex flex-wrap gap-4 text-lg text-slate-600 mb-2">
+          <span>📧 {user?.email}</span>
+          {user?.phone && <span>📱 {user.phone}</span>}
+          {user?.dateOfBirth && <span>🎂 {new Date(user.dateOfBirth).toLocaleDateString()}</span>}
+          {user?.gender && <span>👤 {user.gender.charAt(0).toUpperCase() + user.gender.slice(1)}</span>}
+        </div>
         <p className="text-lg text-slate-600">Here's a quick overview of your account and recent activity.</p>
       </div>
       

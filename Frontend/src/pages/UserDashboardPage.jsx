@@ -72,6 +72,8 @@ const UserDashboardPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-slate-800">{user.name || 'User'}</h2>
                                 <p className="text-sm text-slate-500">{user.email}</p>
+                                {user.phone && <p className="text-sm text-slate-500">📱 {user.phone}</p>}
+                                {user.dateOfBirth && <p className="text-sm text-slate-500">🎂 {new Date(user.dateOfBirth).toLocaleDateString()}</p>}
                             </div>
                             <nav className="flex flex-col space-y-2">
                                 {navLinks.map(link => (

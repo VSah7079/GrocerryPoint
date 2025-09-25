@@ -38,16 +38,17 @@ const ProductListPage = () => {
 
   // Get unique categories
   const categories = useMemo(() => {
-    const cats = ['All', ...new Set(products.map(p => p.category))];
+    const cats = ['All', ...new Set(products.map(p => typeof p.category === 'object' ? p.category.name : p.category))];
     return cats;
   }, [products]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
     let filtered = products.filter(product => {
+      const categoryName = typeof product.category === 'object' ? product.category.name : product.category;
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.category.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+                           categoryName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'All' || categoryName === selectedCategory;
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
       
       return matchesSearch && matchesCategory && matchesPrice;
