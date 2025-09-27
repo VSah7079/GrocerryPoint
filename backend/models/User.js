@@ -32,6 +32,27 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  dateOfBirth: {
+    type: Date
+  },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other']
+  },
+  preferences: {
+    newsletter: {
+      type: Boolean,
+      default: false
+    },
+    notifications: {
+      type: Boolean,
+      default: true
+    },
+    marketing: {
+      type: Boolean,
+      default: false
+    }
+  },
   address: {
     street: String,
     city: String,

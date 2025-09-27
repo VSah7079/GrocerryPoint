@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CategoryAPI } from '../../services/realApi';
 
 const ProductFormModal = ({ isOpen, onClose, onSave, product }) => {
   const [formData, setFormData] = useState({
@@ -8,53 +9,106 @@ const ProductFormModal = ({ isOpen, onClose, onSave, product }) => {
     stock: '',
     image: '',
     description: '',
+    unit: 'piece',
+    isFeatured: false,
+    discount: 0,
+    tags: []
   });
-  const [categories, setCategories] = useState([
-    'Fruits',
-    'Vegetables',
-    'Dairy & Alternatives',
-    'Bakery',
-    'Pantry',
-  ]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Fetch categories from backend
-    fetch('/api/products/categories')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setCategories(data);
+    const fetchCategories = async () => {
+      try {
+        const response = await CategoryAPI.getAllCategories();
+        if (response.success) {
+          setCategories(response.data.categories);
         }
-      });
-  }, []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        // Fallback to default categories
+        setCategories([
+          { _id: 'fruits', name: 'Fruits' },
+          { _id: 'vegetables', name: 'Vegetables' },
+          { _id: 'dairy', name: 'Dairy' },
+          { _id: 'grains', name: 'Grains' },
+          { _id: 'beverages', name: 'Beverages' }
+        ]);
+      }
+    };
+    
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (product) {
       setFormData({
         name: product.name || '',
-        category: product.category || '',
+        category: typeof product.category === 'object' ? product.category._id : product.category || '',
         price: product.price || '',
-        stock: product.stock || 100, // Default stock
+        stock: product.stock || 100,
         image: product.image || '',
         description: product.description || '',
+        unit: product.unit || 'piece',
+        isFeatured: product.isFeatured || false,
+        discount: product.discount || 0,
+        tags: product.tags || []
       });
     } else {
       // Reset for "Add New"
-      setFormData({ name: '', category: categories[0] || '', price: '', stock: '', image: '', description: '' });
+      setFormData({ 
+        name: '', 
+        category: categories[0]?._id || '', 
+        price: '', 
+        stock: '', 
+        image: '', 
+        description: '',
+        unit: 'piece',
+        isFeatured: false,
+        discount: 0,
+        tags: []
+      });
     }
-    // eslint-disable-next-line
   }, [product, isOpen, categories]);
 
   if (!isOpen) return null;
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave({ ...product, ...formData });
+    setLoading(true);
+    
+    try {
+      // Prepare data for API
+      const productData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        stock: parseInt(formData.stock),
+        discount: parseFloat(formData.discount)
+      };
+      
+      // If editing existing product, include the ID
+      if (product && product._id) {
+        productData._id = product._id;
+      }
+      
+      // Call the parent's save function
+      await onSave(productData);
+    } catch (error) {
+      console.error('Error saving product:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,12 +130,47 @@ const ProductFormModal = ({ isOpen, onClose, onSave, product }) => {
             <div>
               <label htmlFor="category" className="block text-sm font-semibold text-slate-700 mb-1">Category</label>
               <select name="category" id="category" value={formData.category} onChange={handleChange} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label htmlFor="stock" className="block text-sm font-semibold text-slate-700 mb-1">Stock Quantity</label>
               <input name="stock" id="stock" type="number" value={formData.stock} onChange={handleChange} placeholder="Stock Quantity" required className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="unit" className="block text-sm font-semibold text-slate-700 mb-1">Unit</label>
+              <select name="unit" id="unit" value={formData.unit} onChange={handleChange} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                <option value="piece">Piece</option>
+                <option value="kg">Kilogram</option>
+                <option value="g">Gram</option>
+                <option value="l">Liter</option>
+                <option value="ml">Milliliter</option>
+                <option value="pack">Pack</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="discount" className="block text-sm font-semibold text-slate-700 mb-1">Discount (%)</label>
+              <input name="discount" id="discount" type="number" min="0" max="100" value={formData.discount} onChange={handleChange} placeholder="0" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+            </div>
+            <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                name="isFeatured" 
+                id="isFeatured" 
+                checked={formData.isFeatured} 
+                onChange={handleChange}
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-slate-300 rounded"
+              />
+              <label htmlFor="isFeatured" className="ml-2 text-sm font-semibold text-slate-700">
+                Featured Product
+              </label>
             </div>
           </div>
           <div>
@@ -99,8 +188,28 @@ const ProductFormModal = ({ isOpen, onClose, onSave, product }) => {
             <textarea name="description" id="description" value={formData.description} onChange={handleChange} placeholder="Product Description" rows="4" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500"></textarea>
           </div>
           <div className="flex justify-end space-x-4 pt-4">
-            <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg text-slate-600 font-semibold hover:bg-slate-100 transition-colors">Cancel</button>
-            <button type="submit" className="px-6 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors">Save Product</button>
+            <button 
+              type="button" 
+              onClick={onClose} 
+              disabled={loading}
+              className="px-6 py-2 rounded-lg text-slate-600 font-semibold hover:bg-slate-100 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="px-6 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Product'
+              )}
+            </button>
           </div>
         </form>
       </div>

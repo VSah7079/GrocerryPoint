@@ -21,29 +21,61 @@ const ProfileSettings = () => {
     const [message, setMessage] = useState('');
 
     useEffect(() => {
-        // Initialize form with current user data
-        if (user) {
-            // Format date for input field (YYYY-MM-DD)
-            const formatDateForInput = (dateString) => {
-                if (!dateString) return '';
-                const date = new Date(dateString);
-                return date.toISOString().split('T')[0];
-            };
+        // Fetch fresh user data from API
+        const fetchUserData = async () => {
+            try {
+                const response = await get('/auth/me');
+                if (response.success && response.data.user) {
+                    const userData = response.data.user;
+                    
+                    // Format date for input field (YYYY-MM-DD)
+                    const formatDateForInput = (dateString) => {
+                        if (!dateString) return '';
+                        const date = new Date(dateString);
+                        return date.toISOString().split('T')[0];
+                    };
 
-            setFormData({
-                name: user.name || '',
-                email: user.email || '',
-                phone: user.phone || '',
-                dateOfBirth: formatDateForInput(user.dateOfBirth),
-                gender: user.gender || '',
-                preferences: {
-                    newsletter: user.preferences?.newsletter || false,
-                    notifications: user.preferences?.notifications !== false,
-                    marketing: user.preferences?.marketing || false
+                    setFormData({
+                        name: userData.name || '',
+                        email: userData.email || '',
+                        phone: userData.phone || '',
+                        dateOfBirth: formatDateForInput(userData.dateOfBirth),
+                        gender: userData.gender || '',
+                        preferences: {
+                            newsletter: userData.preferences?.newsletter || false,
+                            notifications: userData.preferences?.notifications !== false,
+                            marketing: userData.preferences?.marketing || false
+                        }
+                    });
                 }
-            });
-        }
-    }, [user]);
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                // Fallback to local user data if API fails
+                if (user) {
+                    const formatDateForInput = (dateString) => {
+                        if (!dateString) return '';
+                        const date = new Date(dateString);
+                        return date.toISOString().split('T')[0];
+                    };
+
+                    setFormData({
+                        name: user.name || '',
+                        email: user.email || '',
+                        phone: user.phone || '',
+                        dateOfBirth: formatDateForInput(user.dateOfBirth),
+                        gender: user.gender || '',
+                        preferences: {
+                            newsletter: user.preferences?.newsletter || false,
+                            notifications: user.preferences?.notifications !== false,
+                            marketing: user.preferences?.marketing || false
+                        }
+                    });
+                }
+            }
+        };
+
+        fetchUserData();
+    }, [user, get]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -70,8 +102,8 @@ const ProfileSettings = () => {
         try {
             const response = await put('/auth/profile', formData);
             if (response.success) {
-                // Update the user data in context and localStorage
-                const updatedUser = { ...user, ...formData };
+                // Update the user data in context and localStorage with fresh data from server
+                const updatedUser = { ...user, ...response.data.user };
                 login(updatedUser, localStorage.getItem('token'));
                 
                 setMessage('Profile updated successfully!');
@@ -85,28 +117,34 @@ const ProfileSettings = () => {
         }
     };
 
-    const handleCancel = () => {
-        // Reset form to original user data
-        if (user) {
-            // Format date for input field (YYYY-MM-DD)
-            const formatDateForInput = (dateString) => {
-                if (!dateString) return '';
-                const date = new Date(dateString);
-                return date.toISOString().split('T')[0];
-            };
+    const handleCancel = async () => {
+        // Fetch fresh user data to reset form
+        try {
+            const response = await get('/auth/me');
+            if (response.success && response.data.user) {
+                const userData = response.data.user;
+                
+                const formatDateForInput = (dateString) => {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toISOString().split('T')[0];
+                };
 
-            setFormData({
-                name: user.name || '',
-                email: user.email || '',
-                phone: user.phone || '',
-                dateOfBirth: formatDateForInput(user.dateOfBirth),
-                gender: user.gender || '',
-                preferences: {
-                    newsletter: user.preferences?.newsletter || false,
-                    notifications: user.preferences?.notifications !== false,
-                    marketing: user.preferences?.marketing || false
-                }
-            });
+                setFormData({
+                    name: userData.name || '',
+                    email: userData.email || '',
+                    phone: userData.phone || '',
+                    dateOfBirth: formatDateForInput(userData.dateOfBirth),
+                    gender: userData.gender || '',
+                    preferences: {
+                        newsletter: userData.preferences?.newsletter || false,
+                        notifications: userData.preferences?.notifications !== false,
+                        marketing: userData.preferences?.marketing || false
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching user data for cancel:', error);
         }
         setIsEditing(false);
         setMessage('');

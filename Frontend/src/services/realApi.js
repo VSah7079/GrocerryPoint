@@ -45,16 +45,37 @@ export const ProductAPI = {
     };
   },
   createProduct: async (productData) => {
-    const res = await api.post('/products', productData);
-    return { success: true, data: { product: res.data } };
+    try {
+      console.log('API: Creating product with data:', productData);
+      const res = await api.post('/products', productData);
+      console.log('API: Create response:', res.data);
+      return { success: true, data: { product: res.data } };
+    } catch (error) {
+      console.error('API: Error creating product:', error);
+      throw error;
+    }
   },
   updateProduct: async (id, productData) => {
-    const res = await api.put(`/products/${id}`, productData);
-    return { success: true, data: { product: res.data } };
+    try {
+      console.log('API: Updating product with ID:', id, 'Data:', productData);
+      const res = await api.put(`/products/${id}`, productData);
+      console.log('API: Update response:', res.data);
+      return { success: true, data: { product: res.data } };
+    } catch (error) {
+      console.error('API: Error updating product:', error);
+      throw error;
+    }
   },
   deleteProduct: async (id) => {
-    const res = await api.delete(`/products/${id}`);
-    return { success: true, message: 'Product deleted successfully' };
+    try {
+      console.log('API: Deleting product with ID:', id);
+      const res = await api.delete(`/products/${id}`);
+      console.log('API: Delete response:', res.data);
+      return { success: true, message: 'Product deleted successfully' };
+    } catch (error) {
+      console.error('API: Error deleting product:', error);
+      throw error;
+    }
   },
 };
 
@@ -184,6 +205,30 @@ export const NewsletterAPI = {
   subscribe: async (email) => {
     const res = await api.post('/newsletter', { email });
     return { success: true, message: 'Subscribed to newsletter successfully' };
+  },
+};
+
+// Category API
+export const CategoryAPI = {
+  getAllCategories: async () => {
+    const res = await api.get('/categories');
+    return { success: true, data: { categories: res.data } };
+  },
+  getCategoryById: async (id) => {
+    const res = await api.get(`/categories/${id}`);
+    return { success: true, data: { category: res.data } };
+  },
+  createCategory: async (categoryData) => {
+    const res = await api.post('/categories', categoryData);
+    return { success: true, data: { category: res.data } };
+  },
+  updateCategory: async (id, categoryData) => {
+    const res = await api.put(`/categories/${id}`, categoryData);
+    return { success: true, data: { category: res.data } };
+  },
+  deleteCategory: async (id) => {
+    const res = await api.delete(`/categories/${id}`);
+    return { success: true, message: 'Category deleted successfully' };
   },
 };
 

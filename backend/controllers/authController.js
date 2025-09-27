@@ -81,3 +81,31 @@ exports.getCurrentUser = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { name, phone, dateOfBirth, gender, preferences } = req.body;
+    const userId = req.user.id;
+    
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+    if (gender) updateData.gender = gender;
+    if (preferences) updateData.preferences = preferences;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    res.json({
+      success: true,
+      data: { user },
+      message: 'Profile updated successfully'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
