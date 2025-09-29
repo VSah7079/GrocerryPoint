@@ -93,7 +93,21 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  // Password reset functionality
+  resetPasswordToken: {
+    type: String
+  },
+  resetPasswordExpire: {
+    type: Date
+  },
+  // Email verification
+  emailVerificationToken: {
+    type: String
+  },
+  emailVerificationExpire: {
+    type: Date
+  }
 }, {
   timestamps: true
 });
@@ -106,6 +120,44 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Generate and hash password token
+userSchema.methods.getResetPasswordToken = function() {
+  const crypto = require('crypto');
+  
+  // Generate token
+  const resetToken = crypto.randomBytes(20).toString('hex');
+  
+  // Hash token and set to resetPasswordToken field
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+  
+  // Set expire - 10 minutes
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+  
+  return resetToken;
+};
+
+// Generate email verification token
+userSchema.methods.getEmailVerificationToken = function() {
+  const crypto = require('crypto');
+  
+  // Generate token
+  const verificationToken = crypto.randomBytes(20).toString('hex');
+  
+  // Hash token and set to emailVerificationToken field
+  this.emailVerificationToken = crypto
+    .createHash('sha256')
+    .update(verificationToken)
+    .digest('hex');
+  
+  // Set expire - 24 hours
+  this.emailVerificationExpire = Date.now() + 24 * 60 * 60 * 1000;
+  
+  return verificationToken;
 };
 
 module.exports = mongoose.model('User', userSchema);

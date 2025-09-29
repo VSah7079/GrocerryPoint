@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 // Import contexts with correct path
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { ShoppingCart, User, LogOut, Settings, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Settings, Menu, X, ArrowLeft } from 'lucide-react';
 
 const Header = () => {
   const { cartCount } = useCart();
@@ -12,6 +12,10 @@ const Header = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const profileMenuRef = useRef();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if current route is an admin route
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -32,6 +36,86 @@ const Header = () => {
     navigate('/');
   };
 
+  // Admin Header - Show simplified header for admin routes
+  if (isAdminRoute) {
+    return (
+      <header className="bg-gradient-to-r from-slate-800 to-slate-900 shadow-lg sticky top-0 z-50 border-b border-slate-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Admin Logo & Back Button */}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/')}
+                className="text-slate-300 hover:text-white p-2 rounded-lg transition-colors duration-200 hover:bg-slate-700"
+                title="Back to Store"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="flex items-center space-x-3">
+                <div className="bg-slate-600 text-white p-2 rounded-lg shadow-lg">
+                  <Settings className="w-6 h-6" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-white">Admin Panel</span>
+                  <span className="text-xs text-slate-300 font-medium">GrocerryPoint</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Admin User Info */}
+            <div className="flex items-center space-x-4">
+              {user && (
+                <>
+                  <div className="hidden sm:block text-slate-300 text-sm">
+                    Welcome, <span className="text-white font-semibold">{user.name}</span>
+                  </div>
+                  <div className="relative" ref={profileMenuRef}>
+                    <button 
+                      onClick={() => setShowProfileMenu(!showProfileMenu)}
+                      className="flex items-center space-x-2 text-slate-300 hover:text-white p-2 rounded-lg transition-all duration-200 hover:bg-slate-700"
+                    >
+                      <div className="w-8 h-8 bg-slate-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    </button>
+
+                    {showProfileMenu && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-2xl py-2 z-50 border border-gray-200">
+                        <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
+                          <div className="font-semibold text-gray-900">{user.name}</div>
+                          <div className="text-gray-500 text-xs">{user.email}</div>
+                          <div className="text-xs text-blue-600 font-medium mt-1">Admin Access</div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigate('/');
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 flex items-center space-x-2"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                          <span>Back to Store</span>
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 flex items-center space-x-2"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  // Regular Store Header
   return (
     <header className="bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg sticky top-0 z-50 border-b border-green-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

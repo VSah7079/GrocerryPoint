@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthAPI } from '../services/api';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -7,7 +8,7 @@ const ForgotPasswordPage = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
       setError('Please enter your email address');
@@ -17,11 +18,20 @@ const ForgotPasswordPage = () => {
     setIsLoading(true);
     setError('');
     
-    // Simulate password reset process
-    setTimeout(() => {
+    try {
+      const response = await AuthAPI.forgotPassword({ email });
+      
+      if (response.success) {
+        setIsSubmitted(true);
+      } else {
+        setError(response.error || 'Failed to send reset email');
+      }
+    } catch (err) {
+      console.error('Forgot password error:', err);
+      setError(err.message || 'An error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-      setIsSubmitted(true);
-    }, 2000);
+    }
   };
 
   const handleEmailChange = (e) => {

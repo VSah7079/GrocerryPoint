@@ -1,5 +1,14 @@
 const express = require('express');
-const { signup, login, getCurrentUser, updateProfile } = require('../controllers/authController');
+const { 
+  signup, 
+  login, 
+  getCurrentUser, 
+  updateProfile, 
+  forgotPassword, 
+  resetPassword, 
+  verifyEmail, 
+  resendVerification 
+} = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -12,5 +21,13 @@ router.post('/login', login);
 router.get('/me', protect, getCurrentUser);
 // Update user profile
 router.put('/profile', protect, updateProfile);
+
+// Password reset routes
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:resettoken', resetPassword);
+
+// Email verification routes
+router.post('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', resendVerification);
 
 module.exports = router;

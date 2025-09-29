@@ -130,6 +130,26 @@ export const AuthAPI = {
     localStorage.removeItem('user');
     return { success: true, message: 'Logged out successfully' };
   },
+  forgotPassword: async (email) => {
+    const res = await api.post('/auth/forgot-password', email);
+    return res.data;
+  },
+  resetPassword: async (token, password) => {
+    const res = await api.post(`/auth/reset-password/${token}`, { password });
+    if (res.data.success && res.data.data.token) {
+      localStorage.setItem('token', res.data.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.data.user));
+    }
+    return res.data;
+  },
+  verifyEmail: async (token) => {
+    const res = await api.post(`/auth/verify-email/${token}`);
+    return res.data;
+  },
+  resendVerification: async (email) => {
+    const res = await api.post('/auth/resend-verification', { email });
+    return res.data;
+  },
 };
 
 // Cart API
@@ -253,6 +273,118 @@ export const CategoryAPI = {
   deleteCategory: async (id) => {
     const res = await api.delete(`/categories/${id}`);
     return { success: true, message: 'Category deleted successfully' };
+  },
+};
+
+// Wallet API
+export const WalletAPI = {
+  getWalletBalance: async () => {
+    try {
+      const res = await api.get('/wallet');
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to fetch wallet balance');
+    }
+  },
+  getWalletHistory: async () => {
+    try {
+      const res = await api.get('/wallet/history');
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to fetch wallet history');
+    }
+  },
+  addMoney: async (amount, paymentMethod = 'card') => {
+    try {
+      const res = await api.post('/wallet/add', { amount, paymentMethod });
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to add money to wallet');
+    }
+  },
+  processOrderPayment: async (orderId, amount) => {
+    try {
+      const res = await api.post('/wallet/pay-order', { orderId, amount });
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to process payment');
+    }
+  },
+};
+
+// Upload API
+export const UploadAPI = {
+  uploadProductImage: async (formData) => {
+    try {
+      const res = await api.post('/upload/product', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to upload product image');
+    }
+  },
+  uploadProductGallery: async (formData) => {
+    try {
+      const res = await api.post('/upload/product-gallery', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to upload product gallery');
+    }
+  },
+  uploadUserAvatar: async (formData) => {
+    try {
+      const res = await api.post('/upload/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to upload avatar');
+    }
+  },
+  uploadCategoryImage: async (formData) => {
+    try {
+      const res = await api.post('/upload/category', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to upload category image');
+    }
+  },
+  deleteFile: async (filename) => {
+    try {
+      const res = await api.delete(`/upload/${filename}`);
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to delete file');
+    }
+  },
+  listFiles: async () => {
+    try {
+      const res = await api.get('/upload/list');
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to list files');
+    }
+  },
+  getFileInfo: async (filename) => {
+    try {
+      const res = await api.get(`/upload/info/${filename}`);
+      return res.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.error || 'Failed to get file info');
+    }
   },
 };
 

@@ -8,7 +8,9 @@
   NewsletterAPI,
   AddressAPI,
   AdminAPI,
-  CategoryAPI
+  CategoryAPI,
+  WalletAPI,
+  UploadAPI
 } from './realApi';
 
 export { 
@@ -21,7 +23,9 @@ export {
   NewsletterAPI,
   AddressAPI,
   AdminAPI,
-  CategoryAPI
+  CategoryAPI,
+  WalletAPI,
+  UploadAPI
 };
 
 export default {
@@ -34,5 +38,7 @@ export default {
   NewsletterAPI,
   AddressAPI,
   AdminAPI,
-  CategoryAPI
+  CategoryAPI,
+  WalletAPI,
+  UploadAPI
 };
