@@ -20,6 +20,7 @@ import CheckoutPage from '../pages/CheckoutPage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
 import SignupPage from '../pages/SignupPage.jsx';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from '../pages/ResetPasswordPage.jsx';
 import OrderConfirmationPage from '../pages/OrderConfirmationPage.jsx';
 import UserDashboardPage from '../pages/UserDashboardPage.jsx';
 import InvoicePage from '../pages/InvoicePage';
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
+      { path: 'reset-password/:token', element: <ResetPasswordPage /> },
       { path: 'verify-email/:token', element: <EmailVerificationPage /> },
       { path: 'order-confirmation', element: <OrderConfirmationPage /> },
       { path: 'auth/callback', element: <AuthCallbackPage /> },
