@@ -77,15 +77,22 @@ const connectDB = async () => {
 
 connectDB();
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const walletRoutes = require('./routes/walletRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -106,7 +113,9 @@ app.get('/', (req, res) => {
       health: '/api/health',
       auth: '/api/auth',
       products: '/api/products',
-      categories: '/api/categories'
+      categories: '/api/categories',
+      wallet: '/api/wallet',
+      upload: '/api/upload'
     }
   });
 });

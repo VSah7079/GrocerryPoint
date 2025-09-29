@@ -59,7 +59,49 @@ const productSchema = new mongoose.Schema({
   tags: [{
     type: String,
     trim: true
-  }]
+  }],
+  // Stock tracking and history
+  stockHistory: [{
+    type: {
+      type: String,
+      enum: ['initial', 'add', 'remove', 'set', 'reserved', 'sold', 'returned'],
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true
+    },
+    previousStock: {
+      type: Number,
+      required: true
+    },
+    newStock: {
+      type: Number,
+      required: true
+    },
+    reason: {
+      type: String,
+      required: true
+    },
+    performedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Order'
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  // Low stock alert threshold
+  lowStockThreshold: {
+    type: Number,
+    default: 5,
+    min: 0
+  }
 }, {
   timestamps: true
 });

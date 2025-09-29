@@ -59,7 +59,41 @@ const userSchema = new mongoose.Schema({
     state: String,
     zipCode: String,
     country: String
-  }
+  },
+  // Wallet functionality
+  wallet: {
+    type: Number,
+    default: 0,
+    min: [0, 'Wallet balance cannot be negative']
+  },
+  walletHistory: [{
+    type: {
+      type: String,
+      enum: ['credit', 'debit'],
+      required: true
+    },
+    amount: {
+      type: Number,
+      required: true,
+      min: [0, 'Amount must be positive']
+    },
+    description: {
+      type: String,
+      required: true
+    },
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Order'
+    },
+    balance: {
+      type: Number,
+      required: true
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });
