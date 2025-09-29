@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
-  withCredentials: true,
+  baseURL: 'http://localhost:5000/api',
+  withCredentials: false, // Changed from true to false for CORS
 });
 
 // Add auth token to requests
@@ -18,16 +18,38 @@ api.interceptors.request.use((config) => {
 export const ProductAPI = {
   getAllProducts: async (params = {}) => {
     const res = await api.get('/products', { params });
-    return { success: true, data: { products: res.data } };
+    console.log('Backend response:', res.data); // Debug log
+    
+    // Handle different response formats
+    let products = [];
+    
+    if (res.data.success && res.data.data) {
+      // New enhanced API format: { success: true, data: [...], pagination: {...} }
+      products = res.data.data;
+    } else if (Array.isArray(res.data)) {
+      // Old format: directly array of products
+      products = res.data;
+    } else {
+      // Fallback
+      products = [];
+    }
+    
+    return { 
+      success: true, 
+      data: { 
+        products: Array.isArray(products) ? products : [] 
+      } 
+    };
   },
   getProductById: async (id) => {
     const res = await api.get(`/products/${id}`);
-    return { success: true, data: { product: res.data } };
+    const product = res.data.success ? res.data.data : res.data;
+    return { success: true, data: { product } };
   },
   getFeaturedProducts: async (limit = 6) => {
-    const res = await api.get('/products');
-    const featuredProducts = res.data.filter(p => p.isFeatured).slice(0, limit);
-    return { success: true, data: { products: featuredProducts } };
+    const res = await api.get('/products/featured', { params: { limit } });
+    const products = res.data.success ? res.data.data : res.data;
+    return { success: true, data: { products: Array.isArray(products) ? products : [] } };
   },
   getProductsByCategory: async (category) => {
     const res = await api.get('/products');
@@ -49,7 +71,8 @@ export const ProductAPI = {
       console.log('API: Creating product with data:', productData);
       const res = await api.post('/products', productData);
       console.log('API: Create response:', res.data);
-      return { success: true, data: { product: res.data } };
+      const product = res.data.success ? res.data.data : res.data;
+      return { success: true, data: { product } };
     } catch (error) {
       console.error('API: Error creating product:', error);
       throw error;
@@ -60,7 +83,8 @@ export const ProductAPI = {
       console.log('API: Updating product with ID:', id, 'Data:', productData);
       const res = await api.put(`/products/${id}`, productData);
       console.log('API: Update response:', res.data);
-      return { success: true, data: { product: res.data } };
+      const product = res.data.success ? res.data.data : res.data;
+      return { success: true, data: { product } };
     } catch (error) {
       console.error('API: Error updating product:', error);
       throw error;

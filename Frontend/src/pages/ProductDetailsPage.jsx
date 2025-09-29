@@ -4,6 +4,7 @@ import { ProductAPI } from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { FaStar, FaRegStar, FaShoppingCart, FaBolt, FaTag, FaCheckCircle, FaFireAlt, FaLeaf, FaHeart, FaRegHeart, FaShareAlt } from 'react-icons/fa';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 const ProductDetailsPage = () => {
   const { productId } = useParams();
@@ -12,7 +13,7 @@ const ProductDetailsPage = () => {
   const navigate = useNavigate();
   const imgRef = useRef();
 
-  // State management
+  // State management - ALL hooks must be at the top level
   const [product, setProduct] = useState(null);
   const [productLoading, setProductLoading] = useState(true);
   const [productError, setProductError] = useState(null);
@@ -22,6 +23,10 @@ const ProductDetailsPage = () => {
   const [imageError, setImageError] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [selectedTab, setSelectedTab] = useState('description');
+  const [isWishlist, setIsWishlist] = useState(false);
+  const [zoom, setZoom] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+  const [mainImage, setMainImage] = useState(null);
 
   // Fetch product details
   useEffect(() => {
@@ -60,10 +65,18 @@ const ProductDetailsPage = () => {
       fetchProduct();
     }
   }, [productId]);
-  
-  const [isWishlist, setIsWishlist] = useState(false);
-  const [zoom, setZoom] = useState(false);
-  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+
+  // Image handling with fallbacks - only if product exists
+  const images = product?.images?.length > 0
+    ? product.images
+    : product?.image ? [product.image] : [];
+
+  // Update mainImage when product changes
+  useEffect(() => {
+    if (product && images.length > 0) {
+      setMainImage(images[0]);
+    }
+  }, [product, images]);
 
   // Loading state
   if (productLoading) {
@@ -107,24 +120,17 @@ const ProductDetailsPage = () => {
     );
   }
 
-  // Image handling with fallbacks
-  const images = product.images?.length > 0
-    ? product.images
-    : [product.image];
-
-  const [mainImage, setMainImage] = useState(images[0]);
-
-  // Product details with defaults
+  // Product details with defaults - safe destructuring
   const {
-    name,
-    category,
-    price,
+    name = '',
+    category = '',
+    price = 0,
     discount = 0,
     rating = 0,
     description = 'No description available',
     inStock = true,
     numReviews = 0,
-  } = product;
+  } = product || {};
 
   // Price calculations
   const newPrice = discount > 0 
@@ -177,7 +183,8 @@ const ProductDetailsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
@@ -200,14 +207,16 @@ const ProductDetailsPage = () => {
                   onMouseLeave={() => setZoom(false)}
                   onMouseMove={handleMouseMove}
                 >
-                  <img
-                    ref={imgRef}
-                    src={mainImage}
-                    alt={name}
-                    className={`w-full h-full object-contain p-4 transition-opacity ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-                    onLoad={handleImageLoad}
-                    onError={handleImageError}
-                  />
+                  {mainImage && (
+                    <img
+                      ref={imgRef}
+                      src={mainImage}
+                      alt={name}
+                      className={`w-full h-full object-contain p-4 transition-opacity ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                      onLoad={handleImageLoad}
+                      onError={handleImageError}
+                    />
+                  )}
                   
                   {!imageLoaded && (
                     <div className="absolute inset-0 bg-gray-100 animate-pulse"></div>
@@ -254,7 +263,7 @@ const ProductDetailsPage = () => {
 
                 {/* Thumbnail Gallery */}
                 <div className="flex gap-2 overflow-x-auto p-2 scrollbar-hide">
-                  {images.map((img, idx) => (
+                  {images.length > 0 && images.map((img, idx) => (
                     <button 
                       key={`${product.id}-${idx}`}
                       onClick={() => { 
@@ -494,7 +503,8 @@ const ProductDetailsPage = () => {
           animation: confetti 2s linear forwards;
         }
       `}</style>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 

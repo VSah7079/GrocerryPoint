@@ -7,7 +7,8 @@
   ContactAPI, 
   NewsletterAPI,
   AddressAPI,
-  AdminAPI
+  AdminAPI,
+  CategoryAPI
 } from './realApi';
 
 export { 
@@ -19,7 +20,8 @@ export {
   ContactAPI, 
   NewsletterAPI,
   AddressAPI,
-  AdminAPI
+  AdminAPI,
+  CategoryAPI
 };
 
 export default {
@@ -31,5 +33,6 @@ export default {
   ContactAPI,
   NewsletterAPI,
   AddressAPI,
-  AdminAPI
+  AdminAPI,
+  CategoryAPI
 };

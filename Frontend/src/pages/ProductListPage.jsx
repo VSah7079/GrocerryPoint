@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ProductAPI } from '../services/api';
 import ProductCard from '../components/ProductCard';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { useLocation } from 'react-router-dom';
 
 const ProductListPage = () => {
@@ -23,11 +24,26 @@ const ProductListPage = () => {
       try {
         setLoading(true);
         const response = await ProductAPI.getAllProducts();
-        setProducts(response.data.products || []);
+        console.log('API Response:', response); // Debug log
+        
+        // Ensure products is always an array
+        const productsData = response?.data?.products || [];
+        if (Array.isArray(productsData)) {
+          setProducts(productsData);
+        } else {
+          console.warn('Products data is not an array:', productsData);
+          setProducts([]);
+        }
         setError(null);
       } catch (err) {
         console.error('Error fetching products:', err);
-        setError('Failed to load products');
+        setError(err.response?.data?.error || err.message || 'Failed to load products');
+        setProducts([]); // Ensure products is always an array
+        
+        // If it's a network error, show a more helpful message
+        if (err.code === 'NETWORK_ERROR' || err.message.includes('Network Error')) {
+          setError('Unable to connect to server. Please check if the backend is running.');
+        }
       } finally {
         setLoading(false);
       }
@@ -38,12 +54,19 @@ const ProductListPage = () => {
 
   // Get unique categories
   const categories = useMemo(() => {
+    if (!Array.isArray(products) || products.length === 0) {
+      return ['All'];
+    }
     const cats = ['All', ...new Set(products.map(p => typeof p.category === 'object' ? p.category.name : p.category))];
     return cats;
   }, [products]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
+    if (!Array.isArray(products) || products.length === 0) {
+      return [];
+    }
+    
     let filtered = products.filter(product => {
       const categoryName = typeof product.category === 'object' ? product.category.name : product.category;
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,7 +103,7 @@ const ProductListPage = () => {
 
   // Get price statistics
   const priceStats = useMemo(() => {
-    if (products.length === 0) return { min: 0, max: 10 };
+    if (!Array.isArray(products) || products.length === 0) return { min: 0, max: 10 };
     const prices = products.map(p => p.price);
     return {
       min: Math.min(...prices),
@@ -122,16 +145,61 @@ const ProductListPage = () => {
           <p className="text-gray-600 mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mr-2"
           >
             Retry
+          </button>
+          <button 
+            onClick={() => navigate('/')} 
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            Go Home
           </button>
         </div>
       </div>
     );
   }
 
+  // Show empty state if no products found
+  if (!loading && (!products || products.length === 0)) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gray-50">
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center">
+              <div className="text-gray-400 text-6xl mb-4">📦</div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">No Products Found</h2>
+              <p className="text-gray-600 mb-6">
+                We couldn't find any products at the moment. This might be because:
+              </p>
+              <ul className="text-gray-600 mb-6 text-left max-w-md mx-auto">
+                <li>• The backend server is not running</li>
+                <li>• No products have been added to the store yet</li>
+                <li>• There's a temporary connection issue</li>
+              </ul>
+              <div className="space-x-2">
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600"
+                >
+                  Refresh Page
+                </button>
+                <button 
+                  onClick={() => navigate('/')}
+                  className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600"
+                >
+                  Go Home
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
       <div className="bg-white shadow-sm border-b">
@@ -343,6 +411,7 @@ const ProductListPage = () => {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 };
 

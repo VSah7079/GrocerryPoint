@@ -5,10 +5,17 @@ const Category = require('../models/Category');
 // @access  Public
 exports.getCategories = async (req, res, next) => {
   try {
-    const categories = await Category.find();
-    res.json(categories);
+    const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+    res.json({
+      success: true,
+      data: categories,
+      count: categories.length
+    });
   } catch (err) {
-    next(err);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to fetch categories'
+    });
   }
 };
 
@@ -18,12 +25,21 @@ exports.getCategories = async (req, res, next) => {
 exports.getCategoryById = async (req, res, next) => {
   try {
     const category = await Category.findById(req.params.id);
-    if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+    if (!category || !category.isActive) {
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
     }
-    res.json(category);
+    res.json({
+      success: true,
+      data: category
+    });
   } catch (err) {
-    next(err);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to fetch category'
+    });
   }
 };
 
@@ -32,11 +48,43 @@ exports.getCategoryById = async (req, res, next) => {
 // @access  Admin
 exports.createCategory = async (req, res, next) => {
   try {
-    const category = new Category(req.body);
-    await category.save();
-    res.status(201).json(category);
+    const { name, description, image } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Category name is required'
+      });
+    }
+    
+    // Check if category already exists
+    const existingCategory = await Category.findOne({ 
+      name: { $regex: new RegExp(`^${name}$`, 'i') } 
+    });
+    
+    if (existingCategory) {
+      return res.status(400).json({
+        success: false,
+        error: 'Category already exists'
+      });
+    }
+    
+    const category = await Category.create({
+      name: name.trim(),
+      description: description?.trim(),
+      image
+    });
+    
+    res.status(201).json({
+      success: true,
+      data: category,
+      message: 'Category created successfully'
+    });
   } catch (err) {
-    next(err);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to create category'
+    });
   }
 };
 
@@ -45,13 +93,50 @@ exports.createCategory = async (req, res, next) => {
 // @access  Admin
 exports.updateCategory = async (req, res, next) => {
   try {
-    const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { name, description, image, isActive } = req.body;
+    
+    const category = await Category.findById(req.params.id);
+    
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
     }
-    res.json(category);
+    
+    // Check if name is being changed and if new name already exists
+    if (name && name !== category.name) {
+      const existingCategory = await Category.findOne({ 
+        name: { $regex: new RegExp(`^${name}$`, 'i') },
+        _id: { $ne: req.params.id }
+      });
+      
+      if (existingCategory) {
+        return res.status(400).json({
+          success: false,
+          error: 'Category name already exists'
+        });
+      }
+    }
+    
+    // Update fields
+    if (name) category.name = name.trim();
+    if (description !== undefined) category.description = description?.trim();
+    if (image !== undefined) category.image = image;
+    if (isActive !== undefined) category.isActive = isActive;
+    
+    await category.save();
+    
+    res.json({
+      success: true,
+      data: category,
+      message: 'Category updated successfully'
+    });
   } catch (err) {
-    next(err);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to update category'
+    });
   }
 };
 
@@ -60,12 +145,38 @@ exports.updateCategory = async (req, res, next) => {
 // @access  Admin
 exports.deleteCategory = async (req, res, next) => {
   try {
-    const category = await Category.findByIdAndDelete(req.params.id);
+    const category = await Category.findById(req.params.id);
+    
     if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
     }
-    res.json({ message: 'Category deleted' });
+    
+    // Check if category is being used by products
+    const Product = require('../models/Product');
+    const productsUsingCategory = await Product.countDocuments({ 
+      category: req.params.id 
+    });
+    
+    if (productsUsingCategory > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Cannot delete category. ${productsUsingCategory} products are using this category.`
+      });
+    }
+    
+    await Category.findByIdAndDelete(req.params.id);
+    
+    res.json({
+      success: true,
+      message: 'Category deleted successfully'
+    });
   } catch (err) {
-    next(err);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to delete category'
+    });
   }
 };
