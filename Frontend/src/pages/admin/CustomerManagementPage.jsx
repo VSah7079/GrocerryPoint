@@ -27,26 +27,32 @@ const CustomerManagementPage = () => {
     useEffect(() => {
         const fetchCustomers = async () => {
             try {
+                const token = localStorage.getItem('adminToken'); // Use admin token
                 const response = await fetch('/api/admin/customers', {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
                 const data = await response.json();
                 
-                if (data.customers) {
+                if (data.success && data.data.customers) {
                     // Transform API data to frontend format
-                    const transformedCustomers = data.customers.map(customer => ({
+                    const transformedCustomers = data.data.customers.map(customer => ({
                         id: customer._id,
                         name: customer.name,
                         email: customer.email,
+                        phone: customer.phone,
                         avatar: `https://i.pravatar.cc/150?u=${customer.email}`,
                         joined: new Date(customer.createdAt).toISOString().split('T')[0],
-                        orders: 0, // This would need to be calculated from orders
-                        totalSpent: 0, // This would need to be calculated from orders
-                        status: 'Active'
+                        orders: customer.totalOrders || 0,
+                        totalSpent: customer.totalSpent || 0,
+                        status: customer.isActive ? 'Active' : 'Suspended',
+                        lastOrderDate: customer.lastOrderDate
                     }));
                     setCustomers(transformedCustomers);
+                } else {
+                    setError(data.message || 'Failed to load customers');
                 }
             } catch (err) {
                 setError('Failed to load customers');
@@ -59,10 +65,38 @@ const CustomerManagementPage = () => {
         fetchCustomers();
     }, []);
 
-    const handleStatusToggle = (id) => {
-        setCustomers(customers.map(c => 
-            c.id === id ? { ...c, status: c.status === 'Active' ? 'Suspended' : 'Active' } : c
-        ));
+    const handleStatusToggle = async (id) => {
+        try {
+            const customer = customers.find(c => c.id === id);
+            const newStatus = customer.status === 'Active' ? false : true;
+            
+            const token = localStorage.getItem('adminToken');
+            const response = await fetch(`/api/admin/customers/${id}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    isActive: newStatus,
+                    reason: 'Status changed by admin'
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setCustomers(customers.map(c => 
+                    c.id === id ? { ...c, status: newStatus ? 'Active' : 'Suspended' } : c
+                ));
+                alert(data.message);
+            } else {
+                alert(data.message || 'Failed to update status');
+            }
+        } catch (err) {
+            console.error('Error toggling status:', err);
+            alert('Failed to update customer status');
+        }
         setOpenDropdown(null);
     };
 
@@ -71,26 +105,54 @@ const CustomerManagementPage = () => {
         setForm(f => ({ ...f, [name]: value }));
     };
 
-    const handleAddCustomer = (e) => {
+    const handleAddCustomer = async (e) => {
         e.preventDefault();
         if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) {
             setFormError('All fields are required.');
             return;
         }
-        const newCustomer = {
-            id: customers.length ? Math.max(...customers.map(c => c.id)) + 1 : 1,
-            name: form.name,
-            email: form.email,
-            avatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(form.email)}`,
-            joined: new Date().toISOString().slice(0, 10),
-            orders: 0,
-            totalSpent: 0,
-            status: form.status,
-        };
-        setCustomers([newCustomer, ...customers]);
-        setShowModal(false);
-        setForm({ name: '', email: '', phone: '', status: 'Active' });
-        setFormError('');
+        
+        try {
+            const token = localStorage.getItem('adminToken');
+            const response = await fetch('/api/admin/customers', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: form.name,
+                    email: form.email,
+                    phone: form.phone
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                const newCustomer = {
+                    id: data.data._id,
+                    name: data.data.name,
+                    email: data.data.email,
+                    phone: data.data.phone,
+                    avatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(data.data.email)}`,
+                    joined: new Date(data.data.createdAt).toISOString().slice(0, 10),
+                    orders: 0,
+                    totalSpent: 0,
+                    status: data.data.isActive ? 'Active' : 'Suspended',
+                };
+                setCustomers([newCustomer, ...customers]);
+                setShowModal(false);
+                setForm({ name: '', email: '', phone: '', status: 'Active' });
+                setFormError('');
+                alert('Customer created successfully!');
+            } else {
+                setFormError(data.message || 'Failed to create customer');
+            }
+        } catch (err) {
+            console.error('Error creating customer:', err);
+            setFormError('Failed to create customer. Please try again.');
+        }
     };
 
     const filteredCustomers = useMemo(() => {

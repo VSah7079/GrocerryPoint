@@ -169,5 +169,5 @@ app.listen(PORT, () => {
   console.log(`🌐 Local: http://localhost:${PORT}`);
   console.log(`📱 API Health: http://localhost:${PORT}/api/health`);
   console.log(`💾 Database: ${mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected'}`);
-  console.log(`👤 Admin Login: admin@grocerrypoint.com / admin123`);
+  console.log(`👤 Admin Login: admin@grocerrypoint.com / Admin@123`);
 });

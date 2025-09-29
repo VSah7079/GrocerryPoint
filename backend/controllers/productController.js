@@ -800,3 +800,153 @@ exports.reserveStock = async (orderItems, session = null) => {
     throw error;
   }
 };
+
+// ADMIN-SPECIFIC FUNCTIONS FOR DYNAMIC MANAGEMENT
+
+// @desc    Get admin product statistics
+// @route   GET /api/products/admin/stats
+// @access  Admin
+exports.getAdminProductStats = async (req, res, next) => {
+  try {
+    const stats = await Product.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalProducts: { $sum: 1 },
+          totalValue: { $sum: { $multiply: ['$price', '$stock'] } },
+          averagePrice: { $avg: '$price' },
+          lowStockProducts: {
+            $sum: { $cond: [{ $lte: ['$stock', 10] }, 1, 0] }
+          },
+          outOfStockProducts: {
+            $sum: { $cond: [{ $eq: ['$stock', 0] }, 1, 0] }
+          },
+          featuredProducts: {
+            $sum: { $cond: ['$isFeatured', 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    const categoryStats = await Product.aggregate([
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          totalValue: { $sum: { $multiply: ['$price', '$stock'] } },
+          avgPrice: { $avg: '$price' }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    const recentProducts = await Product.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('category');
+
+    res.json({
+      success: true,
+      data: {
+        overview: stats[0] || {
+          totalProducts: 0,
+          totalValue: 0,
+          averagePrice: 0,
+          lowStockProducts: 0,
+          outOfStockProducts: 0,
+          featuredProducts: 0
+        },
+        categoryStats,
+        recentProducts
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Bulk update products
+// @route   PUT /api/products/admin/bulk-update
+// @access  Admin
+exports.bulkUpdateProducts = async (req, res, next) => {
+  try {
+    const { productIds, updates } = req.body;
+    
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product IDs array is required'
+      });
+    }
+
+    const result = await Product.updateMany(
+      { _id: { $in: productIds } },
+      { $set: updates },
+      { runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      data: {
+        matchedCount: result.matchedCount,
+        modifiedCount: result.modifiedCount
+      },
+      message: `${result.modifiedCount} products updated successfully`
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Update product stock with history
+// @route   PUT /api/products/admin/:id/stock
+// @access  Admin
+exports.updateProductStock = async (req, res, next) => {
+  try {
+    const { quantity, type, reason } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      });
+    }
+
+    const stockChange = type === 'add' ? quantity : -quantity;
+    const newStock = product.stock + stockChange;
+
+    if (newStock < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Insufficient stock'
+      });
+    }
+
+    // Add stock history entry
+    if (!product.stockHistory) {
+      product.stockHistory = [];
+    }
+    
+    product.stockHistory.push({
+      type,
+      quantity: Math.abs(quantity),
+      previousStock: product.stock,
+      newStock,
+      reason: reason || 'Stock adjustment',
+      performedBy: req.user._id,
+      date: new Date()
+    });
+
+    product.stock = newStock;
+    await product.save();
+
+    res.json({
+      success: true,
+      data: product,
+      message: 'Stock updated successfully'
+    });
+  } catch (err) {
+    next(err);
+  }
+};

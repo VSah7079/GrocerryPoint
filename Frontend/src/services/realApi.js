@@ -101,6 +101,53 @@ export const ProductAPI = {
       throw error;
     }
   },
+  
+  // ADMIN-SPECIFIC FUNCTIONS FOR DYNAMIC MANAGEMENT
+  getAdminProductStats: async () => {
+    try {
+      const res = await api.get('/products/admin/stats');
+      return res.data;
+    } catch (error) {
+      console.error('API: Error fetching admin stats:', error);
+      throw error;
+    }
+  },
+  
+  bulkUpdateProducts: async (productIds, updates) => {
+    try {
+      const res = await api.put('/products/admin/bulk-update', { productIds, updates });
+      return res.data;
+    } catch (error) {
+      console.error('API: Error bulk updating products:', error);
+      throw error;
+    }
+  },
+  
+  updateProductStock: async (productId, quantity, type, reason) => {
+    try {
+      const res = await api.put(`/products/admin/${productId}/stock`, {
+        quantity,
+        type, // 'add' or 'remove'
+        reason
+      });
+      return res.data;
+    } catch (error) {
+      console.error('API: Error updating stock:', error);
+      throw error;
+    }
+  },
+  
+  getProductCategories: async () => {
+    try {
+      // Get unique categories from products
+      const products = await ProductAPI.getAllProducts();
+      const categories = [...new Set(products.data.products.map(p => p.category))].filter(Boolean);
+      return { success: true, data: { categories } };
+    } catch (error) {
+      console.error('API: Error fetching categories:', error);
+      throw error;
+    }
+  }
 };
 
 // Auth API
@@ -130,7 +177,17 @@ export const AuthAPI = {
   logout: async () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('adminToken');
     return { success: true, message: 'Logged out successfully' };
+  },
+  adminLogin: async (credentials) => {
+    const res = await api.post('/auth/admin-login', credentials);
+    if (res.data.success && res.data.data.token) {
+      localStorage.setItem('token', res.data.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.data.user));
+      localStorage.setItem('adminToken', res.data.data.token);
+    }
+    return res.data;
   },
   forgotPassword: async (email) => {
     const res = await api.post('/auth/forgot-password', email);

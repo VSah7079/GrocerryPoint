@@ -17,6 +17,11 @@ router.post('/', protect, admin, productController.createProduct);
 router.put('/:id', protect, admin, productController.updateProduct);
 router.delete('/:id', protect, admin, productController.deleteProduct);
 
+// Admin-specific management routes
+router.get('/admin/stats', protect, admin, productController.getAdminProductStats);
+router.put('/admin/bulk-update', protect, admin, productController.bulkUpdateProducts);
+router.put('/admin/:id/stock', protect, admin, productController.updateProductStock);
+
 // Inventory management routes (Admin only)
 router.put('/:id/stock', protect, admin, productController.updateStock);
 router.get('/inventory/low-stock', protect, admin, productController.getLowStockProducts);

@@ -1,12 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { AuthAPI } from '../../services/api';
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [email, setEmail] = React.useState("admin@example.com");
-  const [password, setPassword] = React.useState("admin123");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   
@@ -16,29 +17,23 @@ const AdminLoginPage = () => {
     setIsLoading(true);
     
     try {
-      if (email === "admin@example.com" && password === "admin123") {
-        // Create admin user object
-        const adminUser = {
-          id: 'admin-1',
-          email: 'admin@example.com',
-          name: 'Admin User',
-          role: 'admin'
-        };
-        
-        // Set both admin token and user context
-        localStorage.setItem("adminToken", "demo-token");
-        login(adminUser, "demo-token");
-        
-        // Add a small delay to show loading state
-        setTimeout(() => {
+      const response = await AuthAPI.adminLogin({ email, password });
+      
+      if (response.success && response.data.user && response.data.token) {
+        // Check if user is actually an admin
+        if (response.data.user.role === 'admin') {
+          login(response.data.user, response.data.token);
           navigate("/admin/dashboard");
-        }, 500);
+        } else {
+          setError("Access denied: Admin privileges required");
+        }
       } else {
-        setError("Invalid credentials");
-        setIsLoading(false);
+        setError(response.error || "Invalid admin credentials");
       }
     } catch (err) {
-      setError("Login failed");
+      console.error('Admin login error:', err);
+      setError(err.response?.data?.error || "Login failed. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -132,17 +127,18 @@ const AdminLoginPage = () => {
             </button>
           </div>
           
-          {/* Demo credentials info */}
-          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+          {/* Admin access info */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
             <div className="flex items-center mb-2">
-              <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
-              <h3 className="text-sm font-medium text-green-800">Demo Access</h3>
+              <h3 className="text-sm font-medium text-blue-800">Admin Access</h3>
             </div>
-            <div className="text-xs text-green-700 space-y-1">
-              <p><span className="font-medium">Email:</span> admin@example.com</p>
-              <p><span className="font-medium">Password:</span> admin123</p>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p>🔐 Use your admin credentials to access the dashboard</p>
+              <p>👤 Only users with admin role can access this panel</p>
+              <p>🛡️ Secure authentication with JWT tokens</p>
             </div>
           </div>
         </form>

@@ -420,3 +420,59 @@ exports.checkVerificationStatus = async (req, res, next) => {
     next(err);
   }
 };
+
+// @desc Admin login
+// @route POST /api/auth/admin-login
+// @access Public
+exports.adminLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email and password are required'
+      });
+    }
+    
+    // Check if user exists and is an admin
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user || user.role !== 'admin') {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid admin credentials'
+      });
+    }
+    
+    // Check password
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid admin credentials'
+      });
+    }
+    
+    // Generate token
+    const token = generateToken(user);
+    
+    res.json({
+      success: true,
+      data: {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isVerified: user.isVerified,
+          createdAt: user.createdAt
+        },
+        token
+      },
+      message: 'Admin login successful'
+    });
+  } catch (err) {
+    next(err);
+  }
+};

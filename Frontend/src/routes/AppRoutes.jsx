@@ -47,6 +47,7 @@ import AdminLoginPage from '../pages/admin/AdminLoginPage.jsx';
 import DynamicAdminDashboard from '../pages/admin/DynamicAdminDashboard.jsx';
 import ProductManagementPage from '../pages/admin/ProductManagementPage.jsx';
 import OrderManagementPage from '../pages/admin/OrderManagementPage.jsx';
+import EnhancedOrderManagement from '../pages/admin/EnhancedOrderManagement.jsx';
 import CustomerManagementPage from '../pages/admin/CustomerManagementPage.jsx';
 import CustomerDetailsPage from '../pages/admin/CustomerDetailsPage.jsx';
 import OrderDetailsPage from '../pages/admin/OrderDetailsPage.jsx';
@@ -102,7 +103,7 @@ export const router = createBrowserRouter([
             children: [
               { path: 'dashboard', element: <DynamicAdminDashboard /> },
               { path: 'products', element: <ProductManagementPage /> },
-              { path: 'orders', element: <OrderManagementPage /> },
+              { path: 'orders', element: <EnhancedOrderManagement /> },
               { path: 'orders/:orderId', element: <OrderDetailsPage /> },
               { path: 'customers', element: <CustomerManagementPage /> },
               { path: 'customers/:customerId', element: <CustomerDetailsPage /> },

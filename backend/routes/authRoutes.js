@@ -8,7 +8,8 @@ const {
   resetPassword, 
   verifyEmail, 
   resendVerification,
-  checkVerificationStatus 
+  checkVerificationStatus,
+  adminLogin 
 } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
@@ -19,6 +20,8 @@ router.post('/register', signup);
 router.post('/signup', signup); // Add signup alias for frontend compatibility
 // User login
 router.post('/login', login);
+// Admin login
+router.post('/admin-login', adminLogin);
 // Get current user profile
 router.get('/me', protect, getCurrentUser);
 // Update user profile
