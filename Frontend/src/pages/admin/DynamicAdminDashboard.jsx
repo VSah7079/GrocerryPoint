@@ -152,11 +152,14 @@ const DynamicAdminDashboard = () => {
       const totalOrders = statsData?.overview?.totalSales || 0;
 
       // Process category data for charts
-      const categoryData = statsData?.categoryStats?.map(cat => ({
-        name: cat.category.split(' ')[0], // Shorten names for chart
-        value: parseInt(cat.percentage),
-        products: cat.productCount
-      })) || [];
+      const categoryData = statsData?.categoryStats?.map(cat => {
+        const categoryName = typeof cat.category === 'object' ? cat.category.name : cat.category;
+        return {
+          name: categoryName.split(' ')[0], // Shorten names for chart
+          value: parseInt(cat.percentage),
+          products: cat.productCount
+        };
+      }) || [];
 
       // Update dashboard state
       setDashboardData({
@@ -456,7 +459,9 @@ const DynamicAdminDashboard = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 text-sm md:text-base truncate">{product.name}</p>
-                    <p className="text-xs md:text-sm text-green-600 font-medium truncate">{product.category}</p>
+                    <p className="text-xs md:text-sm text-green-600 font-medium truncate">
+                      {typeof product.category === 'object' ? product.category.name : product.category}
+                    </p>
                     <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1">
                       <span className="flex items-center text-yellow-500">
                         <Star className="h-3 w-3 fill-current" />
@@ -534,14 +539,17 @@ const DynamicAdminDashboard = () => {
                 🛒 Top Categories
               </h4>
               <div className="space-y-3">
-                {productStats.categoryStats?.slice(0, 3).map((cat, index) => (
-                  <div key={index} className="flex justify-between items-center">
-                    <span className="text-sm text-orange-700 font-medium">
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'} {cat.category.split(' ')[0]}
-                    </span>
-                    <span className="font-bold text-orange-800">{cat.productCount}</span>
-                  </div>
-                ))}
+                {productStats.categoryStats?.slice(0, 3).map((cat, index) => {
+                  const categoryName = typeof cat.category === 'object' ? cat.category.name : cat.category;
+                  return (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className="text-sm text-orange-700 font-medium">
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'} {categoryName.split(' ')[0]}
+                      </span>
+                      <span className="font-bold text-orange-800">{cat.productCount}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -57,16 +57,41 @@ const SignupPage = () => {
         setIsLoading(false);
         return;
       }
-      login(response.data.user, response.data.token);
-      setIsLoading(false);
       
-      // Redirect based on the action
-      if (action === 'buy') {
-        navigate('/checkout');
-      } else if (action === 'cart') {
-        navigate(from);
-      } else {
-        navigate('/'); // Default redirect to home page
+      // Check if verification is required
+      if (response.requiresVerification) {
+        // Show success message and redirect to verification page
+        setIsLoading(false);
+        alert(`✅ Account created successfully! 
+
+📧 Please check your email (${formData.email}) for verification link.
+
+🔒 You need to verify your email before you can login.
+
+✉️ Don't see the email? Check your spam folder.`);
+        navigate('/login', { 
+          state: { 
+            message: 'Please verify your email before logging in.',
+            email: formData.email,
+            requiresVerification: true
+          } 
+        });
+        return;
+      }
+      
+      // Only login if no verification required (shouldn't happen for new users)
+      if (response.data.token) {
+        login(response.data.user, response.data.token);
+        setIsLoading(false);
+        
+        // Redirect based on the action
+        if (action === 'buy') {
+          navigate('/checkout');
+        } else if (action === 'cart') {
+          navigate(from);
+        } else {
+          navigate('/');
+        }
       }
     } catch (err) {
       setError('Network error');

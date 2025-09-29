@@ -24,6 +24,7 @@ import OrderConfirmationPage from '../pages/OrderConfirmationPage.jsx';
 import UserDashboardPage from '../pages/UserDashboardPage.jsx';
 import InvoicePage from '../pages/InvoicePage';
 import AuthCallbackPage from '../pages/AuthCallbackPage.jsx';
+import EmailVerificationPage from '../pages/EmailVerificationPage.jsx';
 
 // User Dashboard Components
 import OrderHistory from '../components/OrderHistory.jsx';
@@ -77,6 +78,7 @@ export const router = createBrowserRouter([
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
+      { path: 'verify-email/:token', element: <EmailVerificationPage /> },
       { path: 'order-confirmation', element: <OrderConfirmationPage /> },
       { path: 'auth/callback', element: <AuthCallbackPage /> },
       // Dashboard routes - separate from MainLayout

@@ -115,7 +115,9 @@ export const AuthAPI = {
   },
   signup: async (userData) => {
     const res = await api.post('/auth/signup', userData);
-    if (res.data.success && res.data.data.token) {
+    // Don't auto-store token on signup - user must verify email first
+    // Token will only be present if email verification is not required
+    if (res.data.success && res.data.data && res.data.data.token && !res.data.requiresVerification) {
       localStorage.setItem('token', res.data.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.data.user));
     }

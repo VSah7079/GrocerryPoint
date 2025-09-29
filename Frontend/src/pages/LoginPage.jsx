@@ -35,7 +35,7 @@ const LoginPage = () => {
     try {
       const response = await AuthAPI.login(formData);
 
-      const { success, data } = response;
+      const { success, data, error, requiresVerification, email } = response;
       
       if (success && data.user && data.token) {
         login(data.user, data.token);
@@ -44,12 +44,61 @@ const LoginPage = () => {
         if (action === 'buy') navigate('/checkout');
         else if (action === 'cart') navigate(from);
         else navigate('/');
+      } else if (requiresVerification) {
+        // User needs to verify email first
+        setError(`🔒 ${error} 
+        
+📧 Please check your email (${email || formData.email}) and click the verification link.
+        
+💡 Didn't receive the email? Check spam folder or contact support.`);
+        setIsLoading(false);
+        
+        // Optionally show resend verification button
+        setTimeout(() => {
+          const resendEmail = window.confirm(`Email verification required for ${formData.email}.\n\nDo you want us to resend the verification email?`);
+          if (resendEmail) {
+            // Call resend verification API
+            AuthAPI.resendVerification({ email: formData.email })
+              .then(() => {
+                alert('✅ Verification email resent! Please check your inbox.');
+              })
+              .catch(() => {
+                alert('❌ Failed to resend email. Please try again later.');
+              });
+          }
+        }, 2000);
       } else {
-        throw new Error('Invalid response from server');
+        throw new Error(error || 'Invalid response from server');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      
+      // Handle different error responses
+      if (err.response && err.response.data) {
+        const { error, requiresVerification, email } = err.response.data;
+        
+        if (requiresVerification) {
+          setError(`🔒 Email verification required!
+          
+📧 Please verify your email (${email || formData.email}) before logging in.
+          
+✉️ Check your inbox and spam folder for the verification link.`);
+          
+          // Show resend option after a delay
+          setTimeout(() => {
+            const resend = window.confirm('Want to resend verification email?');
+            if (resend) {
+              AuthAPI.resendVerification({ email: formData.email })
+                .then(() => alert('📧 Verification email sent!'))
+                .catch(() => alert('❌ Failed to send email.'));
+            }
+          }, 3000);
+        } else {
+          setError(error || 'Login failed. Please try again.');
+        }
+      } else {
+        setError(err.message || 'Network error. Please try again.');
+      }
       setIsLoading(false);
     }
   };

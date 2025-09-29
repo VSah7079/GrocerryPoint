@@ -16,15 +16,18 @@ const CategoriesPage = () => {
         // Create category data with product counts
         const categoryMap = {};
         products.forEach(product => {
-          if (!categoryMap[product.category]) {
-            categoryMap[product.category] = {
-              name: product.category,
+          // Handle both string and object categories
+          const categoryName = typeof product.category === 'object' ? product.category.name : product.category;
+          
+          if (!categoryMap[categoryName]) {
+            categoryMap[categoryName] = {
+              name: categoryName,
               count: 0,
               products: []
             };
           }
-          categoryMap[product.category].count++;
-          categoryMap[product.category].products.push(product);
+          categoryMap[categoryName].count++;
+          categoryMap[categoryName].products.push(product);
         });
         
         setCategories(Object.values(categoryMap));

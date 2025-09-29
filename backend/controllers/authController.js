@@ -42,7 +42,7 @@ exports.signup = async (req, res, next) => {
       console.log('Failed to send verification email:', emailError.message);
     }
     
-    const token = generateToken(user);
+    // Don't auto-login - user must verify email first
     res.status(201).json({
       success: true,
       data: {
@@ -55,10 +55,10 @@ exports.signup = async (req, res, next) => {
           gender: user.gender,
           role: user.role,
           isVerified: user.isVerified
-        },
-        token
+        }
       },
-      message: 'Account created successfully. Please check your email to verify your account.'
+      message: 'Account created successfully! Please check your email and verify your account before logging in.',
+      requiresVerification: true
     });
   } catch (err) {
     next(err);
@@ -70,12 +70,29 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password.' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid email or password.' 
+      });
     }
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password.' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid email or password.' 
+      });
     }
+    
+    // Check if email is verified (except for admin users)
+    if (!user.isVerified && user.role !== 'admin') {
+      return res.status(401).json({
+        success: false,
+        error: 'Please verify your email address before logging in.',
+        requiresVerification: true,
+        email: user.email
+      });
+    }
+    
     const token = generateToken(user);
     res.json({
       success: true,
@@ -87,10 +104,12 @@ exports.login = async (req, res, next) => {
           phone: user.phone,
           dateOfBirth: user.dateOfBirth,
           gender: user.gender,
-          role: user.role 
+          role: user.role,
+          isVerified: user.isVerified 
         },
         token
-      }
+      },
+      message: 'Login successful!'
     });
   } catch (err) {
     next(err);
@@ -283,7 +302,13 @@ exports.verifyEmail = async (req, res, next) => {
     
     res.json({
       success: true,
-      message: 'Email verified successfully'
+      message: 'Email verified successfully! You can now login to your account.',
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified
+      }
     });
   } catch (err) {
     next(err);
@@ -316,7 +341,16 @@ exports.resendVerification = async (req, res, next) => {
     if (user.isVerified) {
       return res.status(400).json({
         success: false,
-        error: 'Email is already verified'
+        error: 'Email is already verified. You can now login to your account.'
+      });
+    }
+    
+    // Rate limiting - prevent spam requests
+    if (user.emailVerificationExpire && user.emailVerificationExpire > Date.now()) {
+      const timeLeft = Math.ceil((user.emailVerificationExpire - Date.now()) / (1000 * 60));
+      return res.status(429).json({
+        success: false,
+        error: `Please wait ${timeLeft} minutes before requesting another verification email`
       });
     }
     
@@ -330,7 +364,8 @@ exports.resendVerification = async (req, res, next) => {
       
       res.json({
         success: true,
-        message: 'Verification email sent successfully'
+        message: 'New verification email sent successfully. Please check your inbox and spam folder.',
+        email: user.email
       });
     } catch (error) {
       user.emailVerificationToken = undefined;
@@ -339,9 +374,48 @@ exports.resendVerification = async (req, res, next) => {
       
       return res.status(500).json({
         success: false,
-        error: 'Email could not be sent'
+        error: 'Failed to send verification email. Please try again later.'
       });
     }
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc Check email verification status
+// @route POST /api/auth/check-verification
+// @access Public
+exports.checkVerificationStatus = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is required'
+      });
+    }
+    
+    const user = await User.findOne({ email }).select('name email isVerified role');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'No account found with that email address'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        email: user.email,
+        name: user.name,
+        isVerified: user.isVerified,
+        canLogin: user.isVerified || user.role === 'admin',
+        role: user.role
+      },
+      message: user.isVerified ? 'Email is verified. You can login now.' : 'Email verification pending.'
+    });
   } catch (err) {
     next(err);
   }

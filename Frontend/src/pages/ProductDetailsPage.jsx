@@ -123,7 +123,6 @@ const ProductDetailsPage = () => {
   // Product details with defaults - safe destructuring
   const {
     name = '',
-    category = '',
     price = 0,
     discount = 0,
     rating = 0,
@@ -131,6 +130,11 @@ const ProductDetailsPage = () => {
     inStock = true,
     numReviews = 0,
   } = product || {};
+  
+  // Handle category safely (can be object or string)
+  const category = product?.category 
+    ? (typeof product.category === 'object' ? product.category.name : product.category)
+    : '';
 
   // Price calculations
   const newPrice = discount > 0 
