@@ -96,11 +96,11 @@ const SignupPage = () => {
           {/* Left Side - Benefits */}
           <div className="text-white text-center lg:text-left">
             <div className="mb-8">
-              <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-full shadow-lg mb-6 animate-pulse">
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-blue-800 rounded-full shadow-lg mb-6 animate-pulse border-4 border-yellow-400">
                 <span className="text-5xl">🛒</span>
               </div>
-              <h1 className="text-4xl font-bold mb-4">Join GrocerryPoint</h1>
-              <p className="text-xl text-green-100 mb-8">
+              <h1 className="text-4xl font-bold mb-4 text-blue-900 drop-shadow-lg">Join GrocerryPoint</h1>
+              <p className="text-xl text-blue-800 mb-8 drop-shadow-md">
                 Start your journey to convenient grocery shopping today!
               </p>
             </div>
@@ -109,19 +109,19 @@ const SignupPage = () => {
               {benefits.map((benefit, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center space-x-4 p-4 bg-white bg-opacity-10 rounded-lg backdrop-blur-sm transform hover:scale-105 transition-all duration-300"
+                  className="flex items-center space-x-4 p-4 bg-blue-900 bg-opacity-80 rounded-lg backdrop-blur-sm transform hover:scale-105 transition-all duration-300 border border-blue-700"
                 >
                   <div className="text-3xl">{benefit.icon}</div>
                   <div>
-                    <h3 className="font-semibold text-lg">{benefit.title}</h3>
-                    <p className="text-green-100">{benefit.desc}</p>
+                    <h3 className="font-semibold text-lg text-yellow-300">{benefit.title}</h3>
+                    <p className="text-blue-100">{benefit.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 p-4 bg-white bg-opacity-10 rounded-lg">
-              <p className="text-sm text-green-100">
+            <div className="mt-8 p-4 bg-yellow-400 bg-opacity-90 rounded-lg border border-yellow-500 shadow-lg">
+              <p className="text-sm text-blue-900 font-bold">
                 🎉 <strong>Already have 10,000+ happy customers!</strong>
               </p>
             </div>
