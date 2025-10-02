@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import ProductFormModal from './ProductFormModal';
+import AuthDebugger from '../../components/AuthDebugger';
 import { Search, Edit, Trash2, Plus } from 'lucide-react';
 import { ProductAPI } from '../../services/realApi';
 
@@ -271,6 +272,9 @@ const ProductManagementPage = () => {
                 onSave={handleSaveProduct}
                 product={editingProduct}
             />
+            
+            {/* Debug component - remove in production */}
+            <AuthDebugger />
         </div>
     );
 };

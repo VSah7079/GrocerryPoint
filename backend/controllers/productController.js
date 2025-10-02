@@ -188,12 +188,45 @@ exports.createProduct = async (req, res, next) => {
 // @access  Admin
 exports.updateProduct = async (req, res, next) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+    console.log('Updating product with ID:', req.params.id);
+    console.log('Request body keys:', Object.keys(req.body));
+    console.log('Image field length:', req.body.image ? req.body.image.length : 'No image');
+    
+    // Check if product exists first
+    const existingProduct = await Product.findById(req.params.id);
+    if (!existingProduct) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Product not found' 
+      });
     }
-    res.json(product);
+    
+    // Handle base64 images - log but allow them through
+    if (req.body.image && req.body.image.startsWith('data:image/')) {
+      console.log('Base64 image detected, size:', (req.body.image.length / 1024).toFixed(1) + 'KB');
+    }
+    
+    // Update the product
+    const product = await Product.findByIdAndUpdate(
+      req.params.id, 
+      req.body, 
+      { 
+        new: true,
+        runValidators: true 
+      }
+    );
+    
+    await product.populate('category');
+    
+    console.log('Product updated successfully:', product.name);
+    
+    res.json({
+      success: true,
+      data: product,
+      message: 'Product updated successfully'
+    });
   } catch (err) {
+    console.error('Error updating product:', err);
     next(err);
   }
 };

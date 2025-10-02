@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { AuthAPI } from '../../services/api';
+import { AuthAPI } from '../../services/realApi';
 
 const AdminLoginPage = () => {
   const navigate = useNavigate();
