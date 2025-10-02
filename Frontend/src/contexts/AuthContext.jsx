@@ -12,10 +12,10 @@ export const AuthProvider = ({ children }) => {
     const checkAdminStatus = () => {
       if (user && user.role === 'admin' && token) {
         setIsAdmin(true);
-        console.log('✅ Admin status confirmed:', user.email, user.role);
+        // console.log('✅ Admin status confirmed:', user.email, user.role);
       } else {
         setIsAdmin(false);
-        console.log('❌ Not admin or not logged in');
+        // console.log('❌ Not admin or not logged in');
       }
     };
     
@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
   }, [user, token]);
 
   const login = (userData, tokenData) => {
-    console.log('🔐 Logging in user:', userData.email, 'Role:', userData.role);
+    // console.log('🔐 Logging in user:', userData.email, 'Role:', userData.role);
     setUser(userData);
     setToken(tokenData);
     localStorage.setItem('user', JSON.stringify(userData));
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
     // If admin login, also store admin token
     if (userData.role === 'admin') {
       localStorage.setItem('adminToken', tokenData);
-      console.log('👑 Admin token stored');
+      // console.log('👑 Admin token stored');
     }
   };
 

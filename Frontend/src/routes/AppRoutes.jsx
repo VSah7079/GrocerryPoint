@@ -45,13 +45,12 @@ import PrivacyPolicyPage from '../pages/PrivacyPolicyPage.jsx';
 // Admin Pages
 import AdminLoginPage from '../pages/admin/AdminLoginPage.jsx';
 import DynamicAdminDashboard from '../pages/admin/DynamicAdminDashboard.jsx';
-import ProductManagementPage from '../pages/admin/ProductManagementPage.jsx';
-import OrderManagementPage from '../pages/admin/OrderManagementPage.jsx';
+import EnhancedProductManagement from '../pages/admin/EnhancedProductManagement.jsx';
 import EnhancedOrderManagement from '../pages/admin/EnhancedOrderManagement.jsx';
 import CustomerManagementPage from '../pages/admin/CustomerManagementPage.jsx';
 import CustomerDetailsPage from '../pages/admin/CustomerDetailsPage.jsx';
 import OrderDetailsPage from '../pages/admin/OrderDetailsPage.jsx';
-import SettingsPage from '../pages/admin/SettingsPage.jsx';
+import CustomerDataTest from '../components/CustomerDataTest.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -102,12 +101,12 @@ export const router = createBrowserRouter([
             element: <AdminLayout />,
             children: [
               { path: 'dashboard', element: <DynamicAdminDashboard /> },
-              { path: 'products', element: <ProductManagementPage /> },
+              { path: 'products', element: <EnhancedProductManagement /> },
               { path: 'orders', element: <EnhancedOrderManagement /> },
               { path: 'orders/:orderId', element: <OrderDetailsPage /> },
               { path: 'customers', element: <CustomerManagementPage /> },
+              { path: 'customers-test', element: <CustomerDataTest /> },
               { path: 'customers/:customerId', element: <CustomerDetailsPage /> },
-              { path: 'settings', element: <SettingsPage /> },
             ]
           }
         ]

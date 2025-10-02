@@ -94,7 +94,17 @@ const SignupPage = () => {
         }
       }
     } catch (err) {
-      setError('Network error');
+      console.log('Signup error:', err);
+      // Handle specific error messages from backend
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error);
+      } else if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Network error. Please try again.');
+      }
       setIsLoading(false);
     }
   };
@@ -160,7 +170,19 @@ const SignupPage = () => {
             </div>
 
             {error && (
-              <div className="mb-4 text-red-600 text-center font-semibold">{error}</div>
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center justify-center">
+                  <span className="text-red-500 mr-2">⚠️</span>
+                  <span className="text-red-700 font-medium">{error}</span>
+                </div>
+                {error.toLowerCase().includes('email already registered') && (
+                  <div className="mt-2 text-center">
+                    <Link to="/login" className="text-blue-600 hover:text-blue-800 underline text-sm">
+                      Already have an account? Login here
+                    </Link>
+                  </div>
+                )}
+              </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">

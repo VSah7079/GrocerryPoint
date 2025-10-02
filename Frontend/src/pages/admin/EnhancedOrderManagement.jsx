@@ -21,6 +21,7 @@ import {
   BarChart3,
   PieChart
 } from 'lucide-react';
+import { AdminAPI, OrderAPI } from '../../services/api';
 
 const EnhancedOrderManagement = () => {
   const [orders, setOrders] = useState([]);

@@ -9,7 +9,8 @@ const {
   verifyEmail, 
   resendVerification,
   checkVerificationStatus,
-  adminLogin 
+  adminLogin,
+  registerAdmin 
 } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
@@ -22,6 +23,8 @@ router.post('/signup', signup); // Add signup alias for frontend compatibility
 router.post('/login', login);
 // Admin login
 router.post('/admin-login', adminLogin);
+// Admin registration
+router.post('/admin/register', registerAdmin);
 // Get current user profile
 router.get('/me', protect, getCurrentUser);
 // Update user profile

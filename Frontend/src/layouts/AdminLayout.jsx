@@ -8,13 +8,12 @@ const navLinks = [
   { to: '/admin/products', label: 'Products', icon: <Package size={20} />, emoji: '🥬' },
   { to: '/admin/orders', label: 'Orders', icon: <ShoppingBag size={20} />, emoji: '🛍️' },
   { to: '/admin/customers', label: 'Customers', icon: <Users size={20} />, emoji: '👥' },
-  { to: '/admin/settings', label: 'Settings', icon: <Settings size={20} />, emoji: '⚙️' },
 ];
 
 const AdminLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLargeScreen, setIsLargeScreen] = useState(false);
 
@@ -178,6 +177,7 @@ const AdminLayout = () => {
                     
                     <button 
                         onClick={() => {
+                            logout();
                             navigate('/admin/login');
                         }} 
                         className="group w-full flex items-center gap-3 py-4 px-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"

@@ -1,8 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import ProductFormModal from './ProductFormModal';
-import AuthDebugger from '../../components/AuthDebugger';
-import { Search, Edit, Trash2, Plus } from 'lucide-react';
+import { Search, Edit, Trash2, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { ProductAPI } from '../../services/realApi';
 
 const ProductManagementPage = () => {
@@ -15,32 +14,83 @@ const ProductManagementPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [lastUpdate, setLastUpdate] = useState(new Date());
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [refreshInterval, setRefreshInterval] = useState(60); // 1 minute default
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Fetch products from backend
-    useEffect(() => {
-        fetchProducts();
-    }, []);
-
-    const fetchProducts = async () => {
-        setLoading(true);
+    // Enhanced fetch products with real-time capabilities
+    const fetchProducts = useCallback(async (showLoadingIndicator = true) => {
+        if (showLoadingIndicator) {
+            setLoading(true);
+        } else {
+            setIsRefreshing(true);
+        }
         setError('');
+        
         try {
-            console.log('Fetching products...');
-            const response = await ProductAPI.getAllProducts();
-            console.log('Fetch response:', response);
+            console.log('🔄 Fetching products with real-time update...');
+            
+            // Add timeout protection
+            const fetchWithTimeout = (promise, timeout = 8000) => {
+                return Promise.race([
+                    promise,
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Request timeout')), timeout)
+                    )
+                ]);
+            };
+
+            const response = await fetchWithTimeout(ProductAPI.getAllProducts());
+            console.log('✅ Real-time fetch response:', response);
             
             if (response.success) {
                 setProducts(response.data.products);
-                console.log('Products loaded:', response.data.products.length);
+                setLastUpdate(new Date());
+                console.log(`✅ Products updated: ${response.data.products.length} items`);
+                
+                // Clear any previous errors on successful fetch
+                if (error) setError('');
+                
+                // Show brief success message for manual refresh
+                if (!showLoadingIndicator && !autoRefresh) {
+                    setSuccessMessage('Products refreshed successfully!');
+                    setTimeout(() => setSuccessMessage(''), 2000);
+                }
             } else {
-                setError('Failed to fetch products');
+                setError('Failed to fetch products - server error');
+                console.error('❌ Server error:', response.message);
             }
         } catch (err) {
-            console.error('Error fetching products:', err);
-            setError(`Failed to fetch products: ${err.message || 'Please check if the backend server is running.'}`);
+            console.error('❌ Error fetching products:', err);
+            setError(`Failed to fetch products: ${err.message === 'Request timeout' ? 'Server timeout' : err.message || 'Please check server connection'}`);
+        } finally {
+            if (showLoadingIndicator) {
+                setLoading(false);
+            } else {
+                setIsRefreshing(false);
+            }
         }
-        setLoading(false);
-    };
+    }, [error, autoRefresh]);
+
+    // Initialize product fetch
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    // Auto-refresh functionality
+    useEffect(() => {
+        let interval;
+        if (autoRefresh && refreshInterval > 0) {
+            interval = setInterval(() => {
+                fetchProducts(false); // Silent refresh
+            }, refreshInterval * 1000);
+        }
+        
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [autoRefresh, refreshInterval, fetchProducts]);
 
     useEffect(() => {
         if (location.state?.openModal) {
@@ -62,58 +112,106 @@ const ProductManagementPage = () => {
     
     const handleSaveProduct = async (savedProduct) => {
         try {
-            console.log('Saving product:', savedProduct); // Debug log
+            console.log('💾 Saving product with real-time update:', savedProduct);
             
             if (savedProduct._id) {
-                // Update existing product
-                console.log('Updating existing product with ID:', savedProduct._id);
+                // Update existing product with immediate UI update
+                console.log('🔄 Updating existing product with ID:', savedProduct._id);
+                
+                // Optimistically update UI first
+                setProducts(prevProducts => 
+                    prevProducts.map(p => p._id === savedProduct._id ? { ...p, ...savedProduct } : p)
+                );
+                
                 const response = await ProductAPI.updateProduct(savedProduct._id, savedProduct);
-                console.log('Update response:', response); // Debug log
+                console.log('✅ Update response:', response);
                 
                 if (response.success) {
-                    setProducts(products.map(p => p._id === savedProduct._id ? response.data.product : p));
-                    setError(''); // Clear any previous errors
-                    setSuccessMessage('Product updated successfully!');
+                    // Update with server response to ensure consistency
+                    setProducts(prevProducts => 
+                        prevProducts.map(p => p._id === savedProduct._id ? response.data.product : p)
+                    );
+                    setError('');
+                    setSuccessMessage('✅ Product updated successfully!');
+                    setLastUpdate(new Date());
                     setTimeout(() => setSuccessMessage(''), 3000);
                 } else {
-                    setError('Failed to update product. Please try again.');
+                    // Revert optimistic update on failure
+                    await fetchProducts(false);
+                    setError('❌ Failed to update product. Please try again.');
                 }
             } else {
-                // Create new product
-                console.log('Creating new product');
+                // Create new product with immediate UI feedback
+                console.log('➕ Creating new product');
+                
                 const response = await ProductAPI.createProduct(savedProduct);
-                console.log('Create response:', response); // Debug log
+                console.log('✅ Create response:', response);
                 
                 if (response.success) {
-                    setProducts([...products, response.data.product]);
-                    setError(''); // Clear any previous errors
-                    setSuccessMessage('Product created successfully!');
+                    // Add new product to the list immediately
+                    setProducts(prevProducts => [...prevProducts, response.data.product]);
+                    setError('');
+                    setSuccessMessage('✅ Product created successfully!');
+                    setLastUpdate(new Date());
                     setTimeout(() => setSuccessMessage(''), 3000);
                 } else {
-                    setError('Failed to create product. Please try again.');
+                    setError('❌ Failed to create product. Please try again.');
                 }
             }
+            
             handleCloseModal();
-            // Refresh the products list to ensure data consistency
-            await fetchProducts();
+            
+            // Optional: Sync with server after a short delay for consistency
+            setTimeout(() => {
+                fetchProducts(false);
+            }, 1000);
+            
         } catch (err) {
-            console.error('Error saving product:', err);
+            console.error('❌ Error saving product:', err);
             setError(`Failed to save product: ${err.message || 'Please try again.'}`);
+            // Revert any optimistic updates
+            if (savedProduct._id) {
+                await fetchProducts(false);
+            }
         }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this product?')) {
+        if (window.confirm('🗑️ Are you sure you want to delete this product? This action cannot be undone.')) {
             try {
+                console.log('🗑️ Deleting product with ID:', id);
+                
+                // Find the product for potential rollback
+                const productToDelete = products.find(p => p._id === id);
+                
+                // Optimistically remove from UI first
+                setProducts(prevProducts => prevProducts.filter(p => p._id !== id));
+                setSuccessMessage('🗑️ Product deleted successfully!');
+                setTimeout(() => setSuccessMessage(''), 2000);
+                
                 const response = await ProductAPI.deleteProduct(id);
+                console.log('✅ Delete response:', response);
+                
                 if (response.success) {
-                    setProducts(products.filter(p => p._id !== id));
-                    // Refresh the products list to ensure data consistency
-                    await fetchProducts();
+                    setError('');
+                    setLastUpdate(new Date());
+                    
+                    // Sync with server after deletion
+                    setTimeout(() => {
+                        fetchProducts(false);
+                    }, 500);
+                } else {
+                    // Revert optimistic deletion on failure
+                    setProducts(prevProducts => [...prevProducts, productToDelete]);
+                    setError('❌ Failed to delete product. Please try again.');
+                    setSuccessMessage('');
                 }
             } catch (err) {
-                console.error('Error deleting product:', err);
-                setError('Failed to delete product. Please try again.');
+                console.error('❌ Error deleting product:', err);
+                setError('❌ Failed to delete product. Please try again.');
+                setSuccessMessage('');
+                // Refresh to restore correct state
+                await fetchProducts(false);
             }
         }
     };
@@ -133,26 +231,96 @@ const ProductManagementPage = () => {
 
     return (
         <div className="bg-slate-50 p-8 min-h-screen">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-                <h1 className="text-4xl font-extrabold text-slate-800 mb-4 sm:mb-0">Product Management</h1>
-                <button 
-                    onClick={() => handleOpenModal()} 
-                    className="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                >
-                    <Plus size={20} />
-                    Add New Product
-                </button>
+            <div className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-4">
+                <div className="flex-1">
+                    <h1 className="text-4xl font-extrabold text-slate-800 mb-2">Product Management</h1>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <span>📦 {products.length} products</span>
+                        <span>🕒 Updated: {lastUpdate.toLocaleTimeString()}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            autoRefresh ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                            {autoRefresh ? `Auto: ${refreshInterval}s` : 'Manual'}
+                        </span>
+                    </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Real-time Controls */}
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setAutoRefresh(!autoRefresh)}
+                            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                                autoRefresh 
+                                    ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                        >
+                            <span>{autoRefresh ? '⏸️' : '▶️'}</span>
+                            <span className="hidden sm:inline">{autoRefresh ? 'Pause' : 'Start'}</span>
+                        </button>
+                        
+                        <select
+                            value={refreshInterval}
+                            onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                            className="text-xs px-2 py-2 rounded-lg border border-gray-200 bg-white"
+                        >
+                            <option value={30}>30s</option>
+                            <option value={60}>1m</option>
+                            <option value={300}>5m</option>
+                        </select>
+
+                        <button
+                            onClick={() => fetchProducts()}
+                            disabled={loading || isRefreshing}
+                            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} />
+                            <span className="hidden sm:inline">Refresh</span>
+                        </button>
+                    </div>
+                    
+                    <button 
+                        onClick={() => handleOpenModal()} 
+                        className="w-full sm:w-auto bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <Plus size={20} />
+                        Add New Product
+                    </button>
+                </div>
             </div>
 
+            {/* Real-time Update Status */}
+            {isRefreshing && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center space-x-3">
+                    <RefreshCw className="h-4 w-4 text-blue-500 animate-spin flex-shrink-0" />
+                    <p className="text-sm text-blue-700 font-medium">Refreshing products data...</p>
+                </div>
+            )}
+
             {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-                    {error}
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 flex items-center space-x-2">
+                    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                    <span>{error}</span>
+                    <button
+                        onClick={() => setError('')}
+                        className="ml-auto text-red-500 hover:text-red-700"
+                    >
+                        ✕
+                    </button>
                 </div>
             )}
 
             {successMessage && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-                    {successMessage}
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6 flex items-center space-x-2">
+                    <span className="text-green-500">✅</span>
+                    <span>{successMessage}</span>
+                    <button
+                        onClick={() => setSuccessMessage('')}
+                        className="ml-auto text-green-500 hover:text-green-700"
+                    >
+                        ✕
+                    </button>
                 </div>
             )}
 
@@ -272,9 +440,6 @@ const ProductManagementPage = () => {
                 onSave={handleSaveProduct}
                 product={editingProduct}
             />
-            
-            {/* Debug component - remove in production */}
-            <AuthDebugger />
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, MoreVertical, UserPlus, UserX, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AdminAPI } from '../../services/api';
 
 const statusClasses = {
     Active: 'bg-green-100 text-green-800',
@@ -26,37 +27,40 @@ const CustomerManagementPage = () => {
     // Fetch customers from API
     useEffect(() => {
         const fetchCustomers = async () => {
+            console.log('🔍 Fetching customers from database...');
             try {
-                const token = localStorage.getItem('adminToken'); // Use admin token
-                const response = await fetch('/api/admin/customers', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const data = await response.json();
+                const response = await AdminAPI.getAllCustomers();
+                console.log('📊 Customer API Response:', response);
                 
-                if (data.success && data.data.customers) {
+                if (response.success && response.data && response.data.customers) {
+                    console.log('✅ Found customers:', response.data.customers.length);
                     // Transform API data to frontend format
-                    const transformedCustomers = data.data.customers.map(customer => ({
+                    const transformedCustomers = response.data.customers.map(customer => ({
                         id: customer._id,
                         name: customer.name,
                         email: customer.email,
-                        phone: customer.phone,
+                        phone: customer.phone || 'Not provided',
+                        role: customer.role || 'user', // Add role field
                         avatar: `https://i.pravatar.cc/150?u=${customer.email}`,
                         joined: new Date(customer.createdAt).toISOString().split('T')[0],
                         orders: customer.totalOrders || 0,
                         totalSpent: customer.totalSpent || 0,
                         status: customer.isActive ? 'Active' : 'Suspended',
-                        lastOrderDate: customer.lastOrderDate
+                        verified: customer.isVerified ? 'Verified' : 'Unverified',
+                        lastOrderDate: customer.lastOrderDate ? new Date(customer.lastOrderDate).toISOString().split('T')[0] : 'No orders yet'
                     }));
+                    console.log('🎯 Transformed customers:', transformedCustomers);
                     setCustomers(transformedCustomers);
+                } else if (response.success && (!response.data || !response.data.customers)) {
+                    console.log('📝 No customers found in database');
+                    setError('No customers found in database. Database might be empty.');
                 } else {
-                    setError(data.message || 'Failed to load customers');
+                    console.error('❌ Invalid response format:', response);
+                    setError('Failed to load customers - Invalid response format');
                 }
             } catch (err) {
-                setError('Failed to load customers');
-                console.error('Error fetching customers:', err);
+                console.error('❌ Error fetching customers:', err);
+                setError('Failed to load customers: ' + (err.message || 'Unknown error'));
             } finally {
                 setLoading(false);
             }
@@ -190,11 +194,44 @@ const CustomerManagementPage = () => {
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
+            {/* Debug Section - Remove in production */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-800">🐛 Debug Info:</h4>
+                <p className="text-sm text-blue-600">
+                    Customers loaded: {customers.length} | 
+                    Filtered: {filteredCustomers.length} | 
+                    Loading: {loading ? 'Yes' : 'No'} | 
+                    Error: {error || 'None'}
+                </p>
+                <p className="text-sm text-blue-600 mt-1">
+                    Roles: {customers.map(c => c.role).join(', ') || 'No roles found'}
+                </p>
+                {customers.length > 0 && (
+                    <details className="mt-2">
+                        <summary className="text-sm text-blue-700 cursor-pointer">Sample Customer Data (with Role)</summary>
+                        <pre className="text-xs bg-blue-100 p-2 mt-1 rounded overflow-auto">
+                            {JSON.stringify(customers[0], null, 2)}
+                        </pre>
+                    </details>
+                )}
+            </div>
+
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-800">Customer Management</h1>
-                    <p className="text-gray-600">Manage customers and their accounts</p>
+                    <p className="text-gray-600">Manage customers and their accounts ({customers.length} total)</p>
+                    <div className="flex gap-3 mt-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            👤 {customers.filter(c => c.role === 'user').length} Users
+                        </span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ✅ {customers.filter(c => c.status === 'Active').length} Active
+                        </span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            ✅ {customers.filter(c => c.verified === 'Verified').length} Verified
+                        </span>
+                    </div>
                 </div>
                 <button
                     onClick={() => setShowModal(true)}
@@ -239,6 +276,7 @@ const CustomerManagementPage = () => {
                         <thead className="bg-gray-50 border-b">
                             <tr>
                                 <th className="text-left py-4 px-6 font-semibold text-gray-700">Customer</th>
+                                <th className="text-left py-4 px-6 font-semibold text-gray-700">Role</th>
                                 <th className="text-left py-4 px-6 font-semibold text-gray-700">Joined</th>
                                 <th className="text-left py-4 px-6 font-semibold text-gray-700">Orders</th>
                                 <th className="text-left py-4 px-6 font-semibold text-gray-700">Total Spent</th>
@@ -262,6 +300,13 @@ const CustomerManagementPage = () => {
                                             </div>
                                         </div>
                                     </td>
+                                    <td className="py-4 px-6">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            customer.role === 'user' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                                        }`}>
+                                            👤 {customer.role}
+                                        </span>
+                                    </td>
                                     <td className="py-4 px-6 text-gray-700">{customer.joined}</td>
                                     <td className="py-4 px-6 text-gray-700">{customer.orders}</td>
                                     <td className="py-4 px-6 text-gray-700">₹{customer.totalSpent.toFixed(2)}</td>
@@ -269,6 +314,13 @@ const CustomerManagementPage = () => {
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[customer.status]}`}>
                                             {customer.status}
                                         </span>
+                                        {customer.verified && (
+                                            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                                                customer.verified === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {customer.verified === 'Verified' ? '✅' : '❌'} {customer.verified}
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="py-4 px-6">
                                         <div className="relative">

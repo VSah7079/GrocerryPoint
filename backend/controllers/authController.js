@@ -476,3 +476,74 @@ exports.adminLogin = async (req, res, next) => {
     next(err);
   }
 };
+
+// @desc    Register new admin
+// @route   POST /api/auth/admin/register
+// @access  Public (but should be secured in production)
+exports.registerAdmin = async (req, res, next) => {
+  try {
+    const { name, email, password, phone, adminKey } = req.body;
+    
+    // Check if required fields are provided
+    if (!name || !email || !password || !adminKey) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Name, email, password, and admin key are required.' 
+      });
+    }
+    
+    // Verify admin key (you should set this in environment variables)
+    const ADMIN_REGISTRATION_KEY = process.env.ADMIN_REGISTRATION_KEY || 'admin_secret_key_2024';
+    if (adminKey !== ADMIN_REGISTRATION_KEY) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid admin registration key.' 
+      });
+    }
+    
+    // Check if user already exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Email already registered.' 
+      });
+    }
+    
+    // Create admin user
+    const admin = await User.create({ 
+      name, 
+      email, 
+      password, 
+      phone,
+      role: 'admin',
+      isAdmin: true,
+      isVerified: true, // Auto-verify admin accounts
+      isActive: true
+    });
+    
+    // Generate token
+    const token = generateToken(admin);
+    
+    res.status(201).json({
+      success: true,
+      data: {
+        user: { 
+          _id: admin._id, 
+          name: admin.name, 
+          email: admin.email, 
+          role: admin.role,
+          isAdmin: admin.isAdmin,
+          isVerified: admin.isVerified,
+          phone: admin.phone,
+          createdAt: admin.createdAt
+        },
+        token
+      },
+      message: 'Admin registered successfully'
+    });
+  } catch (err) {
+    console.log('Admin registration error:', err);
+    next(err);
+  }
+};

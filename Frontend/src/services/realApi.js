@@ -253,6 +253,7 @@ export const WishlistAPI = {
 
 // Order API
 export const OrderAPI = {
+  // Customer Order Functions
   getUserOrders: async () => {
     const res = await api.get('/orders/my');
     return { success: true, data: { orders: res.data } };
@@ -265,13 +266,23 @@ export const OrderAPI = {
     const res = await api.post('/orders', orderData);
     return { success: true, data: { order: res.data } };
   },
-  getAllOrders: async () => {
-    const res = await api.get('/orders');
-    return { success: true, data: { orders: res.data } };
+  
+  // Admin Order Functions
+  getAllOrders: async (params = {}) => {
+    const res = await api.get('/orders', { params });
+    return { success: true, data: { orders: Array.isArray(res.data) ? res.data : [] } };
   },
   updateOrderStatus: async (orderId, status) => {
     const res = await api.put(`/orders/${orderId}`, { status });
     return { success: true, data: { order: res.data } };
+  },
+  cancelOrder: async (orderId) => {
+    const res = await api.put(`/orders/${orderId}/cancel`);
+    return { success: true, data: { order: res.data } };
+  },
+  getOrderStats: async () => {
+    const res = await api.get('/orders/stats');
+    return { success: true, data: res.data };
   },
 };
 
@@ -449,8 +460,73 @@ export const UploadAPI = {
 
 // Admin API
 export const AdminAPI = {
+  // Dashboard & Analytics
   getDashboardStats: async () => {
     const res = await api.get('/admin/stats');
+    return { success: true, data: res.data };
+  },
+  
+  // Customer Management
+  getAllCustomers: async (params = {}) => {
+    const res = await api.get('/admin/customers', { params });
+    return { success: true, data: res.data };
+  },
+  getCustomerById: async (customerId) => {
+    const res = await api.get(`/admin/customers/${customerId}`);
+    return { success: true, data: res.data };
+  },
+  updateCustomerStatus: async (customerId, status) => {
+    const res = await api.put(`/admin/customers/${customerId}/status`, { status });
+    return { success: true, data: res.data };
+  },
+  deleteCustomer: async (customerId) => {
+    const res = await api.delete(`/admin/customers/${customerId}`);
+    return { success: true, message: 'Customer deleted successfully' };
+  },
+  
+  // Order Management
+  getAllOrders: async (params = {}) => {
+    const res = await api.get('/admin/orders', { params });
+    return { success: true, data: res.data };
+  },
+  getOrderById: async (orderId) => {
+    const res = await api.get(`/admin/orders/${orderId}`);
+    return { success: true, data: res.data };
+  },
+  updateOrderStatus: async (orderId, status) => {
+    const res = await api.put(`/admin/orders/${orderId}/status`, { status });
+    return { success: true, data: res.data };
+  },
+  bulkUpdateOrders: async (orderIds, action) => {
+    const res = await api.put('/admin/orders/bulk', { orderIds, action });
+    return { success: true, data: res.data };
+  },
+  
+  // Product Management (Admin specific)
+  getAllProducts: async (params = {}) => {
+    const res = await api.get('/admin/products', { params });
+    return { success: true, data: res.data };
+  },
+  updateProductStock: async (productId, stock) => {
+    const res = await api.put(`/admin/products/${productId}/stock`, { stock });
+    return { success: true, data: res.data };
+  },
+  bulkUpdateProducts: async (productIds, action) => {
+    const res = await api.put('/admin/products/bulk', { productIds, action });
+    return { success: true, data: res.data };
+  },
+  
+  // Analytics & Reports
+  getSalesAnalytics: async (params = {}) => {
+    const res = await api.get('/admin/analytics/sales', { params });
+    return { success: true, data: res.data };
+  },
+  getProductAnalytics: async () => {
+    const res = await api.get('/admin/analytics/products');
+    return { success: true, data: res.data };
+  },
+  getCustomerAnalytics: async () => {
+    const res = await api.get('/admin/analytics/customers');
     return { success: true, data: res.data };
   },
 };

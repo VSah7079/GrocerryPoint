@@ -33,8 +33,13 @@ exports.getAllCustomers = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, search = '', status = 'all' } = req.query;
     
-    // Build query
-    let query = { isAdmin: { $ne: true } }; // Exclude admin users
+    // Build query - Only fetch users with role 'user', exclude admins
+    let query = { 
+      $and: [
+        { role: 'user' }, // Only users with role 'user'
+        { role: { $ne: 'admin' } } // Explicitly exclude admin role
+      ]
+    };
     
     if (search) {
       query.$or = [
