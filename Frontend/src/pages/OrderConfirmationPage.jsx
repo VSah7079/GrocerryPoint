@@ -1,9 +1,15 @@
 import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { FaCheckCircle, FaHome, FaShoppingCart } from 'react-icons/fa';
 
 const OrderConfirmationPage = () => {
-    const location = useLocation();
-    const orderDetails = location.state?.orderDetails;
+  const location = useLocation();
+  const { user } = useAuth();
+
+  // Admin users can also see order confirmations (removed restriction)
+
+  const orderDetails = location.state?.orderDetails;
 
     if (!orderDetails) {
         return (

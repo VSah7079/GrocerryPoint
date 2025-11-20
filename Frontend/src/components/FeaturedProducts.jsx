@@ -11,15 +11,25 @@ const FeaturedProducts = () => {
     const fetchFeaturedProducts = async () => {
       try {
         setLoading(true);
+        console.log('🔍 FeaturedProducts: Starting to fetch featured products...');
+        
         const response = await ProductAPI.getFeaturedProducts(4);
+        console.log('📦 FeaturedProducts: API Response:', response);
+        
         if (response.success) {
-          setFeatured(response.data.products);
+          const products = response.data.products;
+          console.log(`✅ FeaturedProducts: Found ${products.length} featured products`);
+          setFeatured(products);
+          if (products.length === 0) {
+            setError('No featured products available at the moment');
+          }
         } else {
+          console.error('❌ FeaturedProducts: API returned success: false');
           setError('Failed to load featured products');
         }
       } catch (err) {
-        console.error('Error fetching featured products:', err);
-        setError('Failed to load featured products');
+        console.error('❌ FeaturedProducts: Error fetching featured products:', err);
+        setError(`Failed to load featured products: ${err.message}`);
       } finally {
         setLoading(false);
       }

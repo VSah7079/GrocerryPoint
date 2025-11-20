@@ -8,6 +8,7 @@ import {
   AlertCircle, Star, Eye, Bell, RefreshCw 
 } from 'lucide-react';
 import { ProductAPI, AdminAPI } from '../../services/api';
+import ProductAddTest from '../../components/ProductAddTest';
 
 const DynamicAdminDashboard = () => {
   // Dashboard State - Initialize with TRUE Zero State for Real-Time Updates
@@ -537,6 +538,25 @@ const DynamicAdminDashboard = () => {
           <p className="text-sm text-blue-700 font-medium">Refreshing dashboard data...</p>
         </div>
       )}
+
+      {/* Product Addition Test Component */}
+      <ProductAddTest />
+
+      {/* Featured Products Quick Add */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mx-4">
+        <h3 className="text-lg font-bold text-blue-800 mb-3">🌟 Quick Add Featured Products</h3>
+        <p className="text-sm text-blue-600 mb-3">Add sample featured products to populate the home page</p>
+        <button 
+          onClick={async () => {
+            const { addSampleFeaturedProducts } = await import('../../data/featuredProducts');
+            const { ProductAPI } = await import('../../services/api');
+            addSampleFeaturedProducts(ProductAPI);
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Add Sample Featured Products
+        </button>
+      </div>
 
       {/* Responsive Success Message */}
       <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 shadow-sm">

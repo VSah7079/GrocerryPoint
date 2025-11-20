@@ -4,14 +4,14 @@ import { CategoryAPI } from '../../services/realApi';
 const ProductFormModal = ({ isOpen, onClose, onSave, product }) => {
   const [formData, setFormData] = useState({
     name: '',
-    category: '',
+    description: '',
     price: '',
+    category: '',
     stock: '',
     image: '',
-    description: '',
     unit: 'piece',
-    isFeatured: false,
-    discount: 0,
+    isFeatured: true, // Set to true by default so products are featured
+    discount: '',
     tags: []
   });
   // Initialize categories with fallback data immediately

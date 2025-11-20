@@ -5,11 +5,16 @@ const api = axios.create({
   withCredentials: false, // Changed from true to false for CORS
 });
 
-// Add auth token to requests
+// Add auth token to requests - check both user and admin tokens
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const adminToken = localStorage.getItem('adminToken');
+  
+  // Use admin token for admin routes, otherwise use regular token
+  const authToken = config.url?.includes('/admin') || adminToken ? adminToken || token : token;
+  
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`;
   }
   return config;
 });

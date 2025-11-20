@@ -23,7 +23,7 @@ const AdminLoginPage = () => {
         // Check if user is actually an admin
         if (response.data.user.role === 'admin') {
           login(response.data.user, response.data.token);
-          navigate("/admin/dashboard");
+          navigate("/admin");
         } else {
           setError("Access denied: Admin privileges required");
         }

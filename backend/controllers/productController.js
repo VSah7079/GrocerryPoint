@@ -157,21 +157,59 @@ exports.getProductById = async (req, res, next) => {
 // @access  Admin
 exports.createProduct = async (req, res, next) => {
   try {
-    const product = new Product(req.body);
+    // Handle category string to ObjectId conversion
+    let categoryId = req.body.category;
+    if (typeof categoryId === 'string' && !categoryId.match(/^[0-9a-fA-F]{24}$/)) {
+      // If category is a string name, try to find existing category or create default ObjectId
+      const Category = require('../models/Category');
+      try {
+        let category = await Category.findOne({ name: { $regex: new RegExp(categoryId, 'i') } });
+        if (!category) {
+          // Create a new category if it doesn't exist
+          category = new Category({ 
+            name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1),
+            description: `${categoryId.charAt(0).toUpperCase() + categoryId.slice(1)} products`
+          });
+          await category.save();
+        }
+        categoryId = category._id;
+      } catch (categoryError) {
+        console.log('Category handling error, using default:', categoryError.message);
+        // If category operations fail, use a default ObjectId format
+        categoryId = '507f1f77bcf86cd799439011'; // Default category ID
+      }
+    }
     
-    // Add initial stock log entry
+    const productData = {
+      ...req.body,
+      category: categoryId
+    };
+    
+    const product = new Product(productData);
+    
+    // Add initial stock log entry with all required fields
     if (product.stock > 0) {
       product.stockHistory = [{
         type: 'initial',
         quantity: product.stock,
+        previousStock: 0, // Initial stock starts from 0
+        newStock: product.stock, // New stock is the initial stock amount
         reason: 'Initial stock setup',
-        performedBy: req.user._id,
+        performedBy: req.user ? req.user._id : null,
         date: new Date()
       }];
     }
     
     await product.save();
-    await product.populate('category');
+    
+    // Populate category if it exists
+    try {
+      await product.populate('category');
+    } catch (populateError) {
+      console.log('Category populate error:', populateError.message);
+    }
+    
+    console.log('✅ Product created successfully:', product.name);
     
     res.status(201).json({
       success: true,
@@ -179,6 +217,8 @@ exports.createProduct = async (req, res, next) => {
       message: 'Product created successfully'
     });
   } catch (err) {
+    console.error('❌ Product creation error:', err.message);
+    console.error('Request body:', req.body);
     next(err);
   }
 };
@@ -387,17 +427,33 @@ exports.getFeaturedProducts = async (req, res, next) => {
   try {
     const { limit = 8 } = req.query;
 
-    const products = await Product.find({ isFeatured: true, stock: { $gt: 0 } })
+    // First try to get featured products
+    let products = await Product.find({ isFeatured: true, stock: { $gt: 0 } })
       .populate('category', 'name description')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit));
 
+    console.log(`🌟 Found ${products.length} featured products`);
+
+    // If no featured products, get latest products as fallback
+    if (products.length === 0) {
+      console.log('📦 No featured products found, getting latest products as fallback...');
+      products = await Product.find({ stock: { $gt: 0 } })
+        .populate('category', 'name description')
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit));
+      
+      console.log(`📦 Found ${products.length} products as fallback`);
+    }
+
     res.json({
       success: true,
       data: products,
-      count: products.length
+      count: products.length,
+      message: products.length === 0 ? 'No products available' : 'Products retrieved successfully'
     });
   } catch (err) {
+    console.error('❌ Error in getFeaturedProducts:', err);
     next(err);
   }
 };

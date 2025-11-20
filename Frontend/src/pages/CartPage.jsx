@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCart } from '../contexts/CartContext';
-import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { Link, Navigate } from 'react-router-dom';
 import { FaShoppingCart, FaTrashAlt, FaPlus, FaMinus, FaHeart, FaRegSmile, FaLock, FaUndo } from 'react-icons/fa';
 import { useState } from 'react';
 
@@ -8,6 +9,9 @@ const FREE_DELIVERY_THRESHOLD = 499;
 
 const CartPage = () => {
   const { cartItems, removeFromCart, updateQuantity, cartCount } = useCart();
+  const { user } = useAuth();
+
+  // Admin users can also use cart (removed restriction)
   const [coupon, setCoupon] = useState('');
   const [couponStatus, setCouponStatus] = useState(null); // 'success' | 'error' | null
   const [wishlist, setWishlist] = useState([]); // UI only
