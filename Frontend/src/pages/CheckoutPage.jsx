@@ -7,7 +7,32 @@ const CheckoutPage = () => {
   const [step, setStep] = useState(1);
   const [address, setAddress] = useState({ name: '', mobile: '', pincode: '', city: '', state: '', street: '' });
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
-  const [selectedPayment, setSelectedPayment] = useState('Credit/Debit Card');
+  // Determine allowed payment methods. Prefer admin/store settings from localStorage if available.
+  const getAllowedPayments = () => {
+    try {
+      const s = localStorage.getItem('adminSettings') || localStorage.getItem('settings');
+      if (s) {
+        const parsed = JSON.parse(s);
+        const methods = parsed?.store?.paymentMethods;
+        if (methods) {
+          return Object.keys(methods).filter(k => methods[k]).map(k => {
+            if (k === 'cod') return 'Pay on Delivery';
+            if (k === 'card') return 'Credit/Debit Card';
+            if (k === 'upi') return 'UPI / Netbanking';
+            return k;
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to read admin settings from localStorage', err);
+    }
+    // Default: only COD allowed
+    return ['Pay on Delivery'];
+  };
+
+  const allowedPayments = getAllowedPayments();
+  const defaultPayment = allowedPayments.includes('Pay on Delivery') ? 'Pay on Delivery' : (allowedPayments[0] || 'Pay on Delivery');
+  const [selectedPayment, setSelectedPayment] = useState(defaultPayment);
   const { cartItems, cartCount, clearCart } = useCart();
   const navigate = useNavigate();
   
@@ -104,7 +129,7 @@ const CheckoutPage = () => {
             <div className="bg-white rounded-3xl shadow-2xl p-10 animate-fade-in">
               {step === 1 && <AddressForm address={address} setAddress={handleAddressChange} nextStep={() => setStep(2)} />}
               {step === 2 && <TimeSlotForm selected={selectedTimeSlot} setSelected={setSelectedTimeSlot} nextStep={() => setStep(3)} prevStep={() => setStep(1)} />}
-              {step === 3 && <PaymentForm selected={selectedPayment} setSelected={setSelectedPayment} placeOrder={handlePlaceOrder} prevStep={() => setStep(2)} grandTotal={grandTotal} />}
+              {step === 3 && <PaymentForm selected={selectedPayment} setSelected={setSelectedPayment} placeOrder={handlePlaceOrder} prevStep={() => setStep(2)} grandTotal={grandTotal} allowedPayments={allowedPayments} />}
             </div>
             {/* Trust Badges */}
             <div className="flex flex-wrap gap-4 mt-8 justify-center animate-fade-in">
@@ -206,11 +231,11 @@ const TimeSlotForm = ({ selected, setSelected, nextStep, prevStep }) => {
   );
 };
 
-const PaymentForm = ({ selected, setSelected, placeOrder, prevStep, grandTotal }) => {
+const PaymentForm = ({ selected, setSelected, placeOrder, prevStep, grandTotal, allowedPayments }) => {
   const [showConfetti, setShowConfetti] = React.useState(false);
   const paymentOptions = [
-    { name: 'Credit/Debit Card', icon: <FaRegCreditCard className="text-green-600 animate-bounce" /> }, 
-    { name: 'UPI / Netbanking', icon: <FaMobileAlt className="text-green-600 animate-bounce" /> }, 
+    { name: 'Credit/Debit Card', icon: <FaRegCreditCard className="text-green-600 animate-bounce" /> },
+    { name: 'UPI / Netbanking', icon: <FaMobileAlt className="text-green-600 animate-bounce" /> },
     { name: 'Pay on Delivery', icon: <FaMoneyBillWave className="text-green-600 animate-bounce" /> }
   ];
 
@@ -227,36 +252,46 @@ const PaymentForm = ({ selected, setSelected, placeOrder, prevStep, grandTotal }
       <h2 className="text-3xl font-extrabold text-green-700 mb-8 flex items-center gap-2">
         <FaHandHoldingUsd className="text-4xl animate-bounce" /> 3. Payment Options
       </h2>
+
       <div className="space-y-6">
-        {paymentOptions.map(option => (
-          <div key={option.name}>
-            <div onClick={() => setSelected(option.name)} className={`p-5 border-2 rounded-2xl flex items-center cursor-pointer transition-all duration-200 shadow-lg ${selected === option.name ? 'border-green-600 ring-2 ring-green-500 bg-green-50 scale-105' : 'hover:bg-slate-50'}`}>
-              <span className="text-3xl mr-5">{option.icon}</span>
-              <span className="text-xl font-bold text-green-900">{option.name}</span>
-              <div className="ml-auto">
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === option.name ? 'border-green-600 bg-green-600' : 'border-slate-300'}`}>{selected === option.name && <FaCheckCircle className="text-white text-lg" />}</div>
-              </div>
-            </div>
-            {selected === 'Credit/Debit Card' && option.name === 'Credit/Debit Card' && (
-              <div className="pl-4 pr-4 pt-4 -mt-2 bg-green-50 border-l-2 border-r-2 border-b-2 border-green-600 rounded-b-2xl animate-fade-in-down">
-                <div className="space-y-3">
-                  <input type="text" placeholder="Card Number" className="w-full p-3 border-2 border-green-200 rounded-lg" />
-                  <div className="flex gap-3">
-                    <input type="text" placeholder="MM / YY" className="w-1/2 p-3 border-2 border-green-200 rounded-lg" />
-                    <input type="text" placeholder="CVC" className="w-1/2 p-3 border-2 border-green-200 rounded-lg" />
-                  </div>
+        {paymentOptions.map(option => {
+          const isAllowed = allowedPayments.includes(option.name);
+          return (
+            <div key={option.name}>
+              <div
+                onClick={() => isAllowed && setSelected(option.name)}
+                className={`p-5 border-2 rounded-2xl flex items-center transition-all duration-200 shadow-lg ${selected === option.name ? 'border-green-600 ring-2 ring-green-500 bg-green-50 scale-105' : 'hover:bg-slate-50'} ${!isAllowed ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <span className="text-3xl mr-5">{option.icon}</span>
+                <span className="text-xl font-bold text-green-900">{option.name}</span>
+                <div className="ml-auto">
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selected === option.name ? 'border-green-600 bg-green-600' : 'border-slate-300'}`}>{selected === option.name && <FaCheckCircle className="text-white text-lg" />}</div>
                 </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {selected === 'Credit/Debit Card' && option.name === 'Credit/Debit Card' && (
+                <div className="pl-4 pr-4 pt-4 -mt-2 bg-green-50 border-l-2 border-r-2 border-b-2 border-green-600 rounded-b-2xl animate-fade-in-down">
+                  <div className="space-y-3">
+                    <input type="text" placeholder="Card Number" className="w-full p-3 border-2 border-green-200 rounded-lg" />
+                    <div className="flex gap-3">
+                      <input type="text" placeholder="MM / YY" className="w-1/2 p-3 border-2 border-green-200 rounded-lg" />
+                      <input type="text" placeholder="CVC" className="w-1/2 p-3 border-2 border-green-200 rounded-lg" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
       <div className="flex justify-between items-center mt-10">
         <button onClick={prevStep} className="text-green-700 font-bold hover:text-green-900 transition-colors">← Back to Delivery</button>
         <button onClick={handlePlaceOrder} className="bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-10 rounded-2xl font-extrabold text-xl shadow-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 flex items-center gap-2 relative overflow-hidden">
           <FaMoneyBillWave className="text-2xl animate-bounce" /> Place Order (₹{grandTotal.toFixed(2)})
         </button>
       </div>
+
       {/* Confetti Animation */}
       {showConfetti && (
         <div className="pointer-events-none absolute inset-0 z-50">

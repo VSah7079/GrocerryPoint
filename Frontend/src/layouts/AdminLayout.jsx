@@ -53,144 +53,91 @@ const AdminLayout = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setSidebarOpen(false)}></div>
             )}
             
-            {/* Responsive Green Sidebar */}
-            <div className={`fixed lg:relative inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-80' : isLargeScreen ? 'w-20' : 'w-0'} bg-gradient-to-b from-emerald-800 via-emerald-900 to-green-900 shadow-2xl flex flex-col overflow-hidden`}>
-                {/* Green Sidebar Header */}
-                <div className="relative flex items-center justify-between p-6 border-b border-emerald-700/50 bg-gradient-to-r from-green-600 to-emerald-600">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
+            {/* Sidebar - lighter, compact and searchable */}
+            <div className={`fixed lg:relative inset-y-0 left-0 z-50 transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-72' : isLargeScreen ? 'w-20' : 'w-0'} bg-white border-r border-gray-100 shadow-sm flex flex-col overflow-hidden`}>
+                {/* Sidebar Header */}
+                <div className="relative flex items-center justify-between p-4 border-b bg-white">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-sm">
                             <span className="text-2xl">🛒</span>
                         </div>
                         {(sidebarOpen || isLargeScreen) && (
-                            <div className="text-white">
-                                <h1 className="text-xl font-bold tracking-tight">
-                                    GrocerryPoint
-                                </h1>
-                                <p className="text-sm text-green-100 font-medium">Admin Dashboard</p>
+                            <div className="text-gray-900">
+                                <h1 className="text-lg font-semibold tracking-tight">GrocerryPoint</h1>
+                                <p className="text-xs text-gray-500">Admin</p>
                             </div>
                         )}
                     </div>
                     <button 
                         onClick={() => setSidebarOpen(!sidebarOpen)} 
-                        className="ml-2 p-2.5 rounded-xl hover:bg-white/10 focus:outline-none transition-all duration-200 text-white hover:text-green-100 lg:block"
+                        className="ml-2 p-2 rounded-md hover:bg-gray-100 focus:outline-none transition-all duration-150 text-gray-600"
+                        aria-label="Toggle sidebar"
                     >
-                        <Menu size={20} />
+                        <Menu size={18} />
                     </button>
                 </div>
-                {/* Green Navigation Menu */}
-                <nav className="flex-grow pt-8 px-4">
-                    {(sidebarOpen || isLargeScreen) && (
-                        <div className="mb-6">
-                            <p className="text-xs font-semibold text-emerald-300 uppercase tracking-wider px-4">Main Menu</p>
-                        </div>
-                    )}
-                    
-                    <div className="space-y-2">
-                        {navLinks.map((link, index) => (
-                            <Link
-                                key={link.to}
-                                to={link.to}
-                                className={`group relative flex items-center gap-4 py-4 px-4 rounded-2xl transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5
-                                    ${location.pathname.startsWith(link.to) 
-                                        ? 'bg-gradient-to-r from-green-400/20 to-emerald-400/20 text-green-200 shadow-xl border-l-4 border-green-400' 
-                                        : 'hover:bg-emerald-700/30 text-emerald-100 hover:text-green-200'
-                                    }`}
-                            >
-                                <div className={`flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 flex-shrink-0
-                                    ${location.pathname.startsWith(link.to) 
-                                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg' 
-                                        : 'bg-emerald-800/50 group-hover:bg-emerald-700/50 text-emerald-200 group-hover:text-green-200'
-                                    }`}>
-                                    {(sidebarOpen && isLargeScreen) || (!isLargeScreen && sidebarOpen) ? (
-                                        <span className="text-xl">{link.emoji}</span>
-                                    ) : (
-                                        <span className={location.pathname.startsWith(link.to) ? 'text-white' : 'text-emerald-200 group-hover:text-green-200'}>{link.icon}</span>
-                                    )}
-                                </div>
-                                
-                                {((sidebarOpen && isLargeScreen) || (!isLargeScreen && sidebarOpen)) && (
-                                    <div className="flex-1 min-w-0">
-                                        <span className="font-semibold text-base truncate block">{link.label}</span>
-                                        {location.pathname.startsWith(link.to) && (
-                                            <div className="flex items-center mt-1">
-                                                <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse mr-2"></div>
-                                                <span className="text-xs text-green-200">Active</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                
-                                {/* Active Indicator */}
-                                {location.pathname.startsWith(link.to) && (
-                                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                                        <div className="w-1 h-8 bg-green-300 rounded-full"></div>
-                                    </div>
-                                )}
-                            </Link>
-                        ))}
+
+                {/* Search (shown when expanded) */}
+                {sidebarOpen && (
+                    <div className="p-3 border-b">
+                        <input
+                            type="search"
+                            placeholder="Search menu..."
+                            className="w-full px-3 py-2 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+                            aria-label="Search sidebar links"
+                        />
                     </div>
-                    
-                    {/* Green Quick Stats Card */}
-                    {(sidebarOpen || window.innerWidth >= 1024) && (
-                        <div className="mt-8 p-5 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-2xl border border-emerald-600/20">
-                            <div className="text-center">
-                                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                                    <span className="text-white text-xl">📊</span>
-                                </div>
-                                <h4 className="text-sm font-bold text-green-200 mb-1">Store Analytics</h4>
-                                <p className="text-xs text-emerald-300 leading-relaxed">Fresh products & happy customers</p>
-                                <div className="flex justify-center mt-3">
-                                    <div className="flex items-center space-x-1">
-                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                        <span className="text-xs font-medium text-green-300">Live Data</span>
+                )}
+
+                {/* Navigation Menu */}
+                <nav className="flex-grow pt-4 px-3">
+                    <div className="mb-2 px-1">
+                        {(sidebarOpen || isLargeScreen) && <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">Main</p>}
+                    </div>
+                    <div className="space-y-1">
+                        {navLinks.map((link) => {
+                            const active = location.pathname.startsWith(link.to);
+                            return (
+                                <Link
+                                    key={link.to}
+                                    to={link.to}
+                                    className={`group flex items-center gap-3 py-3 px-3 rounded-lg transition-colors duration-150 ${active ? 'bg-green-50 text-green-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                                    title={link.label}
+                                >
+                                    <div className={`flex items-center justify-center w-10 h-10 rounded-md ${active ? 'bg-green-100 text-green-700' : 'bg-gray-50 text-gray-600'}`}>
+                                        {(!sidebarOpen && isLargeScreen) ? link.icon : <span className="text-lg">{link.emoji}</span>}
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                                    {(sidebarOpen || (!isLargeScreen && sidebarOpen)) && (
+                                        <div className="flex-1 min-w-0">
+                                            <span className={`font-medium text-sm truncate`}>{link.label}</span>
+                                            {active && <div className="text-xs text-green-500 mt-1">Active</div>}
+                                        </div>
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </div>
+
+                    {/* (Removed duplicate Sign Out button - use profile Sign Out below) */}
                 </nav>
-                {/* Green User Profile Section */}
-                <div className="p-4 border-t border-emerald-700/50 bg-gradient-to-r from-emerald-800/50 to-green-800/50">
-                    {sidebarOpen && (
-                        <div className="mb-4 p-4 bg-emerald-700/30 rounded-2xl border border-emerald-600/30">
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg border-2 border-green-300/50">
-                                        <span className="text-white font-bold text-xl">
-                                            {user?.name?.charAt(0) || 'A'}
-                                        </span>
-                                    </div>
-                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-3 border-emerald-900 flex items-center justify-center">
-                                        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                                    </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-green-200 text-base truncate">{user?.name || 'Admin User'}</h3>
-                                    <p className="text-sm text-emerald-300 font-medium flex items-center gap-1">
-                                        <span>👑</span> Store Manager
-                                    </p>
-                                    <p className="text-xs text-emerald-400">Online now</p>
-                                </div>
+
+                {/* Profile & Sign out */}
+                <div className="p-3 border-t bg-white">
+                    <div className="mb-3 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-semibold text-lg">{user?.name?.charAt(0) || 'A'}</div>
+                        {(sidebarOpen || isLargeScreen) && (
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'Admin User'}</h3>
+                                <p className="text-xs text-gray-500">Store Manager</p>
                             </div>
-                        </div>
-                    )}
-                    
-                    <button 
-                        onClick={() => {
-                            logout();
-                            navigate('/admin/login');
-                        }} 
-                        className="group w-full flex items-center gap-3 py-4 px-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-                    >
-                        <div className="w-10 h-10 bg-red-500/30 rounded-xl flex items-center justify-center group-hover:bg-red-400/30 transition-all duration-300">
-                            <LogOut size={18} />
-                        </div>
-                        {sidebarOpen && (
-                            <>
-                                <span className="flex-1 text-left">Sign Out</span>
-                                <div className="w-2 h-2 bg-red-300 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            </>
                         )}
+                    </div>
+                    <button 
+                        onClick={() => { logout(); navigate('/admin/login'); }}
+                        className="w-full flex items-center gap-3 py-2 px-3 rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                        <LogOut size={16} />
+                        {(sidebarOpen || isLargeScreen) && <span className="text-sm font-medium">Sign Out</span>}
                     </button>
                 </div>
             </div>

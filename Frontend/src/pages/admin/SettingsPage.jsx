@@ -51,14 +51,15 @@ const SettingsPage = () => {
             currency: 'INR',
             paymentMethods: {
                 cod: true,
-                card: true,
-                upi: true,
+                card: false,
+                upi: false,
             }
         },
         shipping: {
             standardRate: 50.00,
             expressRate: 100.00,
             freeShippingThreshold: 500.00,
+            expressEnabled: true,
         },
         notifications: {
             newOrder: true,
@@ -89,6 +90,41 @@ const SettingsPage = () => {
                     ...prev.store.paymentMethods,
                     [method]: value
                 }
+            }
+        }));
+    };
+
+    // Quick helper: enable only Cash on Delivery and disable other payment methods
+    const handleEnableCODOnly = () => {
+        setSettings(prev => ({
+            ...prev,
+            store: {
+                ...prev.store,
+                paymentMethods: {
+                    cod: true,
+                    card: false,
+                    upi: false,
+                }
+            }
+        }));
+    };
+
+    // Quick helper: enable only payment (COD) and delivery (standard), disable other payment methods and express shipping
+    const handleEnablePayAndDeliveryOnly = () => {
+        setSettings(prev => ({
+            ...prev,
+            store: {
+                ...prev.store,
+                paymentMethods: {
+                    cod: true,
+                    card: false,
+                    upi: false,
+                }
+            },
+            shipping: {
+                ...prev.shipping,
+                expressEnabled: false,
+                expressRate: 0
             }
         }));
     };
@@ -209,6 +245,16 @@ const SettingsPage = () => {
                                     <option value="USD">US Dollar ($)</option>
                                     <option value="EUR">Euro (€)</option>
                                 </select>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between">
+                                <p className="text-sm text-slate-600">Quick action:</p>
+                                <button
+                                    type="button"
+                                    onClick={handleEnableCODOnly}
+                                    className="text-sm px-3 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-md hover:bg-amber-100"
+                                >
+                                    Enable COD only
+                                </button>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Accepted Payment Methods</label>

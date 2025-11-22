@@ -57,19 +57,46 @@ export const ProductAPI = {
     return { success: true, data: { products: Array.isArray(products) ? products : [] } };
   },
   getProductsByCategory: async (category) => {
-    const res = await api.get('/products');
-    const categoryProducts = res.data.filter(p => p.category === category);
+    const res = await api.get('/products', { params: { category } });
+    // Normalize response to array
+    const data = res.data && res.data.success && Array.isArray(res.data.data) ? res.data.data : Array.isArray(res.data) ? res.data : [];
+    const categoryProducts = Array.isArray(data) ? data.filter(p => {
+      const cat = typeof p.category === 'object' ? p.category.name : p.category;
+      return cat === category || (p.category && p.category._id === category);
+    }) : [];
     return { success: true, data: { products: categoryProducts } };
   },
   getProductStats: async () => {
-    const res = await api.get('/products');
+    const res = await api.get('/products', { params: { limit: 1 } });
+    // Normalize different backend response shapes
+    const products = res.data && res.data.success && Array.isArray(res.data.data)
+      ? res.data.data
+      : Array.isArray(res.data)
+        ? res.data
+        : (res.data && res.data.data && Array.isArray(res.data.data)) ? res.data.data : [];
+
+    const totalProducts = products.length;
+    const featuredProducts = products.filter(p => p.isFeatured).length;
+
     return {
       success: true,
       data: {
-        totalProducts: res.data.length,
-        featuredProducts: res.data.filter(p => p.isFeatured).length
+        totalProducts,
+        featuredProducts
       }
     };
+  },
+
+  // Top selling / top-rated alias
+  getTopSellingProducts: async (limit = 5) => {
+    try {
+      const res = await api.get('/products/top-rated', { params: { limit } });
+      const products = res.data && res.data.success && res.data.data ? res.data.data : Array.isArray(res.data) ? res.data : [];
+      return { success: true, data: { products: Array.isArray(products) ? products : [] } };
+    } catch (error) {
+      console.error('API: Error fetching top selling products:', error);
+      return { success: false, data: { products: [] } };
+    }
   },
   createProduct: async (productData) => {
     try {
@@ -491,8 +518,11 @@ export const AdminAPI = {
   
   // Order Management
   getAllOrders: async (params = {}) => {
-    const res = await api.get('/admin/orders', { params });
-    return { success: true, data: res.data };
+    // Orders are served from /orders; admin access is controlled by token/role
+    const res = await api.get('/orders', { params });
+    // Normalize response
+    if (res.data && res.data.success && res.data.data) return { success: true, data: res.data.data };
+    return { success: true, data: Array.isArray(res.data) ? res.data : res.data };
   },
   getOrderById: async (orderId) => {
     const res = await api.get(`/admin/orders/${orderId}`);

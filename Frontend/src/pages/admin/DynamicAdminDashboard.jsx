@@ -60,8 +60,10 @@ const DynamicAdminDashboard = () => {
   // Fetch Product Statistics
   const fetchProductStats = useCallback(async () => {
     try {
-      const response = await ProductAPI.getProductStats();
-      if (response.success) {
+      // Use admin product stats for detailed dashboard info
+      const response = await ProductAPI.getAdminProductStats();
+      // response may be { success: true, data: { overview, categoryStats, recentProducts } }
+      if (response && response.success) {
         setProductStats(response.data);
         return response.data;
       }
@@ -75,8 +77,10 @@ const DynamicAdminDashboard = () => {
   const fetchTopProducts = useCallback(async () => {
     try {
       const response = await ProductAPI.getTopSellingProducts(5);
-      if (response.success) {
-        return response.data.products;
+      if (response && response.success) {
+        // response.data.products or response.data
+        const products = response.data.products || response.data || [];
+        return Array.isArray(products) ? products : [];
       }
     } catch (error) {
       console.error('Error fetching top products:', error);
@@ -102,9 +106,18 @@ const DynamicAdminDashboard = () => {
     try {
       // Fetch real orders from admin API
       const response = await AdminAPI.getAllOrders();
-      if (response.success && response.data.orders) {
-        console.log(`✅ Fetched ${response.data.orders.length} real orders from database`);
-        return response.data.orders.slice(0, 8);
+      if (response && response.success) {
+        // Handle multiple response shapes: array, { customers: [...] }, { data: [...] }
+        let orders = [];
+        if (Array.isArray(response.data)) orders = response.data;
+        else if (response.data && response.data.orders) orders = response.data.orders;
+        else if (response.data && Array.isArray(response.data.data)) orders = response.data.data;
+        else if (response.data && response.data.data && Array.isArray(response.data.data.orders)) orders = response.data.data.orders;
+
+        if (orders.length > 0) {
+          console.log(`✅ Fetched ${orders.length} real orders from database`);
+          return orders.slice(0, 8);
+        }
       }
       
       console.log('📊 No orders found - Dashboard showing ZERO state');
@@ -119,9 +132,17 @@ const DynamicAdminDashboard = () => {
   const fetchRealCustomers = useCallback(async () => {
     try {
       const response = await AdminAPI.getAllCustomers();
-      if (response.success && response.data.customers) {
-        console.log(`✅ Found ${response.data.customers.length} real customers`);
-        return response.data.customers.length;
+      if (response && response.success) {
+        // support shapes: array, { customers: [...] }, { data: { customers: [...] } }
+        let customers = [];
+        if (Array.isArray(response.data)) customers = response.data;
+        else if (response.data && Array.isArray(response.data.customers)) customers = response.data.customers;
+        else if (response.data && response.data.data && Array.isArray(response.data.data.customers)) customers = response.data.data.customers;
+
+        if (customers.length > 0) {
+          console.log(`✅ Found ${customers.length} real customers`);
+          return customers.length;
+        }
       }
       console.log('👥 No customers found - Dashboard showing ZERO');
       return 0;
@@ -295,8 +316,9 @@ const DynamicAdminDashboard = () => {
       // Process category data for charts with error handling
       const categoryData = statsData?.categoryStats?.map(cat => {
         const categoryName = typeof cat.category === 'object' ? cat.category.name : cat.category;
+        const shortName = (categoryName || '').toString().split(' ')[0];
         return {
-          name: categoryName.split(' ')[0], // Shorten names for chart
+          name: shortName, // Shorten names for chart (guarded)
           value: parseInt(cat.percentage),
           products: cat.productCount,
           fullName: categoryName
@@ -391,6 +413,9 @@ const DynamicAdminDashboard = () => {
   // Chart Colors
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1'];
 
+  // Responsive chart height based on window width
+  const chartHeight = windowWidth < 420 ? 150 : windowWidth < 640 ? 180 : windowWidth < 1024 ? 220 : 260;
+
 
 
   // Status Badge Component
@@ -425,17 +450,22 @@ const DynamicAdminDashboard = () => {
   }
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6 bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 md:space-y-6 bg-white min-h-screen">
+      <div className="max-w-screen-xl mx-auto px-4">
       {/* Responsive Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
         <div className="flex-1">
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 mb-3">
-            <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
               <span className="text-2xl">🛒</span>
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-800 truncate">GrocerryPoint Admin</h1>
-              <p className="text-sm sm:text-base text-green-600 font-medium">Fresh Groceries Management Dashboard</p>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">GrocerryPoint Admin</h1>
+              <p className="text-sm sm:text-base text-gray-500">Management Dashboard</p>
+            </div>
+            <div className="hidden sm:flex sm:items-center sm:space-x-2">
+              <button onClick={performRealTimeUpdate} className="bg-green-600 text-white px-3 py-2 rounded-md text-sm shadow-sm hover:bg-green-700">Refresh</button>
+              <button onClick={() => setAutoRefresh(!autoRefresh)} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-md text-sm border">{autoRefresh ? 'Pause' : 'Start'}</button>
             </div>
           </div>
           <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
@@ -571,80 +601,29 @@ const DynamicAdminDashboard = () => {
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
+      {/* Key Metrics - compact cards with trend badges */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { title: 'Fresh Products', value: dashboardData.totalProducts, icon: '🥬', color: 'text-green-700', delta: '+0%' },
+          { title: 'Grocery Orders', value: dashboardData.totalOrders, icon: '📦', color: dashboardData.totalOrders === 0 ? 'text-red-700' : 'text-orange-700', delta: dashboardData.totalOrders === 0 ? '-100%' : '+4%' },
+          { title: 'Store Revenue', value: `₹${dashboardData.totalRevenue.toLocaleString()}`, icon: '💰', color: 'text-emerald-700', delta: '+0%' },
+          { title: 'Happy Customers', value: dashboardData.totalCustomers, icon: '👨‍👩‍👧‍👦', color: 'text-blue-700', delta: '+1.2%' }
+        ].map((card) => (
+          <div key={card.title} className="bg-white rounded-xl shadow p-4 border hover:shadow-md transition-shadow flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Fresh Products</p>
-              <p className="text-3xl font-bold text-green-700">{dashboardData.totalProducts}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">🥬</span>
-            </div>
-          </div>
-          <p className="text-xs text-green-600 mt-2 font-medium">� Available in store</p>
-        </div>
-
-        <div className={`bg-white rounded-xl shadow-lg p-6 border-l-4 hover:shadow-xl transition-all ${
-          dashboardData.totalOrders === 0 
-            ? 'border-red-500 bg-red-50' 
-            : 'border-orange-500'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Grocery Orders</p>
-              <div className="flex items-center space-x-2">
-                <p className={`text-3xl font-bold ${
-                  dashboardData.totalOrders === 0 ? 'text-red-700' : 'text-orange-700'
-                }`}>
-                  {dashboardData.totalOrders}
-                </p>
-                {dashboardData.totalOrders === 0 && (
-                  <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">
-                    ZERO
-                  </span>
-                )}
+              <p className="text-xs text-gray-500 font-medium">{card.title}</p>
+              <div className="flex items-baseline gap-3">
+                <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
+                <span className="text-xs text-gray-400">/</span>
+                <span className="px-2 py-1 text-xs bg-gray-50 border rounded-full text-gray-600">Today</span>
               </div>
             </div>
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              dashboardData.totalOrders === 0 ? 'bg-red-100' : 'bg-orange-100'
-            }`}>
-              <span className="text-2xl">{dashboardData.totalOrders === 0 ? '🚫' : '📦'}</span>
+            <div className="flex flex-col items-end">
+              <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center text-xl">{card.icon}</div>
+              <span className="mt-2 text-xs text-green-600 font-medium">{card.delta}</span>
             </div>
           </div>
-          <p className={`text-xs mt-2 font-medium ${
-            dashboardData.totalOrders === 0 ? 'text-red-600' : 'text-orange-600'
-          }`}>
-            {dashboardData.totalOrders === 0 ? '🔄 Ready for new orders' : '🚚 Fast delivery orders'}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-emerald-500 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Store Revenue</p>
-              <p className="text-3xl font-bold text-emerald-700">₹{dashboardData.totalRevenue.toLocaleString()}</p>
-            </div>
-            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">💰</span>
-            </div>
-          </div>
-          <p className="text-xs text-emerald-600 mt-2 font-medium">� Fresh groceries sales</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Happy Customers</p>
-              <p className="text-3xl font-bold text-blue-700">{dashboardData.totalCustomers}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">👨‍👩‍👧‍👦</span>
-            </div>
-          </div>
-          <p className="text-xs text-blue-600 mt-2 font-medium">🏠 Families served</p>
-        </div>
+        ))}
       </div>
 
       {/* Responsive Charts Section */}
@@ -658,7 +637,7 @@ const DynamicAdminDashboard = () => {
             <span className="truncate">GrocerryPoint Sales Trends</span>
           </h3>
           <div className="w-full overflow-hidden">
-            <ResponsiveContainer width="100%" height={250} minWidth={0}>
+            <ResponsiveContainer width="100%" height={chartHeight} minWidth={0}>
               <LineChart data={dashboardData.salesData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -679,7 +658,7 @@ const DynamicAdminDashboard = () => {
             <span className="truncate">Grocery Categories Distribution</span>
           </h3>
           <div className="w-full overflow-hidden">
-            <ResponsiveContainer width="100%" height={250} minWidth={0}>
+            <ResponsiveContainer width="100%" height={chartHeight} minWidth={0}>
               <PieChart>
                 <Pie
                   data={dashboardData.categoryData}
@@ -712,23 +691,23 @@ const DynamicAdminDashboard = () => {
             </div>
             <span className="truncate">Recent Grocery Orders</span>
           </h3>
-          <div className="space-y-3 md:space-y-4 max-h-96 overflow-y-auto">
-            {dashboardData.recentOrders.slice(0, 5).map((order) => (
-              <div key={order.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 md:p-4 border rounded-xl hover:bg-green-50 transition-colors space-y-2 sm:space-y-0">
+          <div className="space-y-3 md:space-y-4 overflow-y-auto" style={{ maxHeight: windowWidth < 640 ? 320 : 540 }}>
+            {dashboardData.recentOrders.slice(0, 5).map((order, idx) => (
+              <div key={order.id || order._id || idx} className="grid grid-cols-1 sm:flex sm:items-center sm:justify-between p-3 md:p-4 border rounded-xl hover:bg-green-50 transition-colors gap-3">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
                   <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-xs md:text-sm">🛒</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm md:text-base truncate">#{order.id}</p>
-                    <p className="text-xs md:text-sm text-gray-600 truncate">{order.customer}</p>
-                    <p className="text-xs text-green-600">{order.type} • {order.items} items</p>
-                    <p className="text-xs text-gray-500">{order.date}</p>
+                    <p className="font-medium text-gray-900 text-sm md:text-base truncate">#{order.id || order._id || '—'}</p>
+                    <p className="text-xs md:text-sm text-gray-600 truncate">{order.customer || order.user?.name || 'Guest'}</p>
+                    <p className="text-xs text-green-600">{order.type || ''} {order.items ? `• ${order.items} items` : ''}</p>
+                    <p className="text-xs text-gray-500">{order.date || new Date(order.createdAt || Date.now()).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="flex justify-between sm:justify-end sm:flex-col sm:text-right space-x-2 sm:space-x-0">
-                  <p className="font-semibold text-gray-900 text-sm md:text-base">₹{order.total}</p>
-                  <StatusBadge status={order.status} />
+                  <p className="font-semibold text-gray-900 text-sm md:text-base">₹{Number(order.total || order.totalAmount || 0).toFixed(2)}</p>
+                  <StatusBadge status={order.status || order.orderStatus || 'Pending'} />
                 </div>
               </div>
             ))}
@@ -743,22 +722,22 @@ const DynamicAdminDashboard = () => {
             </div>
             <span className="truncate">Top Fresh Products</span>
           </h3>
-          <div className="space-y-3 md:space-y-4 max-h-96 overflow-y-auto">
+          <div className="space-y-3 md:space-y-4 overflow-y-auto" style={{ maxHeight: windowWidth < 640 ? 320 : 540 }}>
             {dashboardData.topProducts.slice(0, 5).map((product, index) => (
-              <div key={product.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 md:p-4 border rounded-xl hover:bg-yellow-50 transition-colors border-yellow-100 space-y-2 sm:space-y-0">
+              <div key={product.id || product._id || index} className="grid grid-cols-1 sm:flex sm:items-center sm:justify-between p-3 md:p-4 border rounded-xl hover:bg-yellow-50 transition-colors border-yellow-100 gap-3">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
                   <div className="w-8 h-8 md:w-10 md:h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-yellow-600 font-bold text-xs md:text-sm">#{index + 1}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm md:text-base truncate">{product.name}</p>
+                    <p className="font-medium text-gray-900 text-sm md:text-base truncate">{product.name || 'Unnamed'}</p>
                     <p className="text-xs md:text-sm text-green-600 font-medium truncate">
-                      {typeof product.category === 'object' ? product.category.name : product.category}
+                      {typeof product.category === 'object' ? product.category.name : product.category || 'Uncategorized'}
                     </p>
                     <div className="flex flex-wrap items-center gap-1 md:gap-2 mt-1">
                       <span className="flex items-center text-yellow-500">
                         <Star className="h-3 w-3 fill-current" />
-                        <span className="text-xs ml-1 font-medium">{product.rating}</span>
+                        <span className="text-xs ml-1 font-medium">{product.rating || '—'}</span>
                       </span>
                       {product.isOrganic && (
                         <span className="bg-green-100 text-green-800 text-xs px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap">
@@ -770,8 +749,8 @@ const DynamicAdminDashboard = () => {
                   </div>
                 </div>
                 <div className="flex justify-between sm:justify-end sm:flex-col sm:text-right">
-                  <p className="font-semibold text-gray-900 text-sm md:text-base">₹{product.price}</p>
-                  <p className="text-xs md:text-sm text-green-600 font-medium">{product.sales} sold</p>
+                  <p className="font-semibold text-gray-900 text-sm md:text-base">₹{Number(product.price || 0).toFixed(2)}</p>
+                  <p className="text-xs md:text-sm text-green-600 font-medium">{product.sales || 0} sold</p>
                 </div>
               </div>
             ))}
@@ -834,10 +813,11 @@ const DynamicAdminDashboard = () => {
               <div className="space-y-3">
                 {productStats.categoryStats?.slice(0, 3).map((cat, index) => {
                   const categoryName = typeof cat.category === 'object' ? cat.category.name : cat.category;
+                  const shortName = (categoryName || '').toString().split(' ')[0];
                   return (
                     <div key={index} className="flex justify-between items-center">
                       <span className="text-sm text-orange-700 font-medium">
-                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'} {categoryName.split(' ')[0]}
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'} {shortName}
                       </span>
                       <span className="font-bold text-orange-800">{cat.productCount}</span>
                     </div>
@@ -857,7 +837,7 @@ const DynamicAdminDashboard = () => {
           </div>
           <span className="truncate">Store Notifications</span>
         </h3>
-        <div className="space-y-3 max-h-64 overflow-y-auto">
+        <div className="space-y-3 max-h-52 sm:max-h-64 overflow-y-auto">
           {dashboardData.notifications.map((notification) => (
             <div key={notification.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
@@ -870,6 +850,7 @@ const DynamicAdminDashboard = () => {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

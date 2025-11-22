@@ -435,10 +435,10 @@ exports.adminLogin = async (req, res, next) => {
       });
     }
     
-    // Check if user exists and is an admin
+    // Check if user exists and is an admin (support legacy `isAdmin` flag)
     const user = await User.findOne({ email }).select('+password');
-    
-    if (!user || user.role !== 'admin') {
+
+    if (!user || (user.role !== 'admin' && !user.isAdmin)) {
       return res.status(401).json({
         success: false,
         error: 'Invalid admin credentials'
