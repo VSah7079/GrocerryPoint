@@ -20,8 +20,8 @@ const AdminLoginPage = () => {
       const response = await AuthAPI.adminLogin({ email, password });
       
       if (response.success && response.data.user && response.data.token) {
-        // Check if user is actually an admin
-        if (response.data.user.role === 'admin') {
+        // Check if user is actually an admin (support legacy `isAdmin` flag)
+        if (response.data.user.role === 'admin' || response.data.user.isAdmin) {
           login(response.data.user, response.data.token);
           navigate("/admin");
         } else {

@@ -29,10 +29,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', tokenData);
     
-    // If admin login, also store admin token
-    if (userData.role === 'admin') {
+    // If admin login, also store admin token (support legacy `isAdmin` flag)
+    if (userData.role === 'admin' || userData.isAdmin) {
       localStorage.setItem('adminToken', tokenData);
-      // console.log('👑 Admin token stored');
     }
   };
 
